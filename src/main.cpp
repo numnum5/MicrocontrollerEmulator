@@ -256,12 +256,32 @@ class Cpu
                     break;
 
 
+
+                // ADD (SP plus immediate);
+                // Encoding T1
                 case 0b10101:
                 {
                     uint8_t imm8 = instruction & 0xFF;
                     uint8_t d = (instruction >> 8) & 0b111;
 
-                    uint32_t imm32 = (uint32_t) imm8;
+                    uint32_t imm32 = ((uint32_t) imm8) << 2;
+                    uint32_t SP = this->regs[13];
+
+                    auto result = this->addWithCarry(SP, imm32, 0);
+                    this->regs[d] = result.result;
+
+                }
+
+                // ADD (SP plus immediate);
+                // Encoding T1
+                case 0b10110:
+                {
+                    uint8_t imm7 = instruction & 0b1111111;
+                    uint32_t imm32 = ((uint32_t) imm7 << 2);
+                    uint32_t SP = this->regs[13];
+                    auto result = this->addWithCarry(SP, imm32, 0);
+                    this->regs[13] = result.result;
+                    break;
                 }
 
                 case 0b10000:
