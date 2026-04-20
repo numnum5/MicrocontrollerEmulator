@@ -6,6 +6,11 @@
 using bit = bool;
 constexpr uint8_t PC_INDEX = 15;
 
+typedef struct {
+
+    bit t;
+} EPSR;
+
 typedef struct
 {
     bit N;
@@ -149,23 +154,142 @@ class Cpu
         void decode(uint32_t instruction)
         {
             
+
+
+
             // uint32_t instruction = this->fetch();
             uint8_t thumb_mode = (instruction >> 11) & 0xFF;
             std::cout << std::bitset<32>(thumb_mode) << "\n";
             // std::cout << instruction << std::endl;
+
             // printf("%x\n", thumb_mode);
             switch(thumb_mode)
             {
                 case 0b11101:
+                // BL
                 case 0b11110:
+                {
+
+                    uint16_t imm11 = instruction & 0b11111111111;
+                    uint16_t imm10 = (instruction >> 0xFF) & 0b1111111111;
+
+                    bit S = (instruction >> 0xFF) & (0b1 << 10);
+                    bit J2 = (instruction) &  (0b1 << 11);
+                    bit J1 =  (instruction) &  (0b1 << 13);
+
+
+                    bit I1 = ~(J1 ^ S);
+                    bit I2 = ~(J2 ^ S);
+
+                    //  ...... .......
+
+                    uint32_t imm32 =  (S << 24) | (I2 << 23) | (I1 << 22) | (imm10 << 12 ) | (imm11 << 1);
+
+                    uint32_t next_instruction_addr = this->regs[13];
+                    this->regs[14] = next_instruction_addr | 1;
+                    this->regs[13] += imm32;
+
+                    break;
+
+                }
                 case 0b11111:
                     // 32 bit thumb mode
                     // 
                     break;
                 case 0b01000:
-                {
+                {   
+                    // check if its also AND instruction
 
-                    std::cout << "WORKING!\n";
+
+                    uint8_t is_and = (instruction >> 6) & 0b1111;
+
+                    bit tenthBit = (instruction & 0b1 << 10);
+
+                    if (tenthBit == 1)
+                    {
+                        // check 9, 8 and 7th bit
+                        // BLX
+
+                        uint8_t blx_bits = (instruction >> 7) & 0b111;
+
+
+                        // this is BLX instruction
+                        if (blx_bits == 0b111)
+                        {
+                            uint8_t m = instruction & 0b111;
+
+                            if (m == 15)
+                            {
+                                std::cout << "Unpredictable behaviour!\n";
+                                return;
+                            }
+
+
+                            uint32_t target = this->regs[m];
+
+                            uint32_t next_pc = this->regs[13] - 2;
+                            this->regs[14] = next_pc | 1; 
+
+                            this->espr.t = target & 0b1;
+                            this->regs[13] = target & ~0b1;
+                        }
+                        else if (blx_bits == 0b110)
+                        {
+                            
+                             uint8_t m = instruction & 0b111;
+                            if (m == 15)
+                            {
+                                std::cout << "Unpredictable behaviour!\n";
+                                return;
+                            }
+
+                            this->regs[13] = this->regs[m];
+                        }
+                    }
+
+                    switch(is_and)
+                    {
+                        case 0b0000:
+                        {
+                            uint8_t n, d = instruction & 0b111;
+                            uint8_t m = (instruction >> 3) & 0b111;
+                            uint32_t Rm = this->regs[m];
+
+                            uint8_t shift_n = 0;
+                            SRType type = SRType_LSL;    
+                            Shift_c shifted = this->shift_c(Rm, type, shift_n, this->aspr.C);                              
+
+                            uint32_t result = shifted.result & this->regs[n];
+
+                            this->regs[d] = result;
+                            this->aspr.N = shifted.result >> 31;
+                            this->aspr.C = shifted.carry_out;
+                            this->aspr.Z = shifted.result == 0x0;
+                            break;
+                        }
+
+                        case 0b1110:
+                        {
+                            uint8_t n, d = instruction & 0b111;
+                            uint8_t m = (instruction >> 3) & 0b111;
+                            uint32_t Rm = this->regs[m];
+
+                            uint8_t shift_n = 0;
+                            SRType type = SRType_LSL;    
+                            Shift_c shifted = this->shift_c(Rm, type, shift_n, this->aspr.C);                              
+
+                            uint32_t result = shifted.result & ~(this->regs[n]);
+
+                            this->regs[d] = result;
+
+                            this->aspr.N = shifted.result >> 31;
+                            this->aspr.C = shifted.carry_out;
+                            this->aspr.Z = shifted.result == 0x0;
+                            break;
+                        }
+
+                    }
+               
                     bool setflags = ! this->inITBlock();
                     
                     uint8_t n, d = instruction & 0b111;
@@ -256,6 +380,22 @@ class Cpu
                     break;
 
 
+                case 0b10111:
+                {
+                    break;
+                }
+                case 0b10100:
+                {
+                    uint8_t imm8 = instruction & 0xFF;
+                    uint8_t d = (instruction >> 8) & 0b111;
+                    uint32_t imm32 = ((uint32_t) imm8) << 2;
+                    uint32_t result = this->regs[13] + imm32;
+                    this->regs[d] = result;
+
+
+                    break;
+                }
+
 
                 // ADD (SP plus immediate);
                 // Encoding T1
@@ -284,6 +424,8 @@ class Cpu
                     break;
                 }
 
+                // ADD (SP plus register) Encoding T1
+
                 case 0b10000:
                 {
                     uint8_t type = (instruction >> 6) & 0b1111;
@@ -301,6 +443,12 @@ class Cpu
                     // }
                     break;
                 }
+
+                case 0b00010:
+                {
+                    
+                }
+
                 case 0b00000:
                 {
                     uint8_t immediate = (instruction >> 6) & 0b11111;
@@ -330,9 +478,12 @@ class Cpu
         uint8_t flash[0x1000];
         uint8_t ram[0x1000];
         ASPR aspr;
+        EPSR espr;
 
         
 };
+
+
 
 
 
