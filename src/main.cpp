@@ -5,6 +5,44 @@
 #include <bitset>
 #include <bit>
 
+
+typedef enum 
+{
+    U32,
+    U16,
+    U8
+} NumberType;
+
+class Number
+{
+public:
+    Number(uint8_t len, NumberType type) : length(len), type(type)
+    {
+    }
+
+    uint8_t getLength() const
+    {
+        return length;
+    }
+
+    private:
+        NumberType type;
+        uint8_t length;
+};
+
+
+class u32 : public Number
+{
+    public:
+        u32() : Number(32, U32)
+        {
+
+        }
+         uint32_t value;
+    private:
+       
+};
+
 using bit = bool;
 constexpr uint8_t PC_INDEX = 15;
 typedef enum {
@@ -81,6 +119,14 @@ class Cpu
                 (this->ram[address + 3] << 24);
             
             return data;
+        }
+
+        void write32(uint32_t address, uint32_t value)
+        {
+            this->ram[address] = value & 0xFF;
+            this->ram[address + 1] = (value >> 0xFF) & 0xFF;
+            this->ram[address + 2] = (value >> 0xFFFF) & 0xFF;
+            this->ram[address + 3] = (value >> 0xFFFFFF) & 0xFF;
         }
 
         uint8_t read8(uint32_t address) const
@@ -454,6 +500,59 @@ class Cpu
                                 }
                             }
 
+                            // RSB (Immediate)
+                            case 0b1001:
+                            {
+                                uint8_t d = instruction & 0b111;
+                                uint8_t n = (instruction >> 3) & 0b111;
+
+                                 auto result = addWithCarry(~(this->regs[n]), 0x0, true);
+
+                                 this->regs[d] = result.result;
+
+                                this->aspr.N = (result.result >> 31) & 0b1;
+                                this->aspr.Z = result.result == 0x0;
+                                this->aspr.C = result.carry_out;
+                                this->aspr.V = result.overflow;
+                            }
+
+                            // ROR (Register)
+                            case 0b0111:
+                            {
+                                uint8_t d, n = instruction & 0b111;
+                                uint8_t m = (instruction >> 3) & 0b111;
+
+                                uint8_t shift_n = this->regs[m] & 0xFF;
+
+                                auto result = shift_c(this->regs[n], SRType_ROR, shift_n, aspr.C);
+
+                                this->regs[d] = result.result;
+
+                                this->aspr.N = (result.result >> 31) & 0b1;
+                                this->aspr.Z = result.result == 0x0;
+                                this->aspr.C = result.carry_out;
+                                break;
+                            }
+
+                            // SBC (register)
+                            case 0b0110:
+                            {
+                                uint8_t d,n = instruction & 0b111;
+                                uint8_t m = (instruction >> 3) & 0b111;
+                                auto shifted = this->shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+                                auto result = addWithCarry(this->regs[n],~shifted , aspr.C);
+
+                                this->regs[d] = result.result;
+
+                                this->aspr.N = (result.result >> 31) & 0b1;
+                                this->aspr.Z = result.result == 0x0;
+                                this->aspr.C = result.carry_out;
+                                this->aspr.V = result.overflow;
+
+                                break;
+                            }
+
                             case 0b1111:
                             {
                                 uint8_t d = instruction & 0b111;
@@ -671,6 +770,11 @@ class Cpu
                             break;
                         }
 
+                        case 0b01:
+                        {
+                            break;
+                        }
+
                         default:
                             std::cout << "default op, somethings wrong!!!\n";
                             break;
@@ -682,6 +786,127 @@ class Cpu
                 case 0b00110:
                     break;
 
+                // STR encoding T2
+                case 0b10010:
+                {
+                    uint8_t t = (instruction >> 8) & 0b111;
+                    uint8_t imm8 = instruction & 0xFF;
+                    uint8_t n = 13;
+
+                    uint32_t imm32 = (uint32_t)(imm8 << 2);
+
+                    bool index = true;
+                    bool add = true;
+                    bool wback = false;
+                    
+                    uint32_t Rn = this->regs[n];
+
+                    uint32_t offset_addr = add ? Rn + imm32 : Rn - imm32;
+
+                    uint32_t address = index  ? offset_addr : Rn;
+
+                    write32(address, this->regs[t]);
+
+                    if (wback)
+                    {
+                        // logic
+                    }
+                    break;
+                }
+
+                // STM
+                case 0b11000:
+                {
+                    uint16_t registers = instruction & 0xFF;
+                    
+                    uint8_t n = (instruction >> 8) & 0b111;
+
+                    uint8_t imm5 = (instruction >> 6) & 0b11111;
+
+                    if (std::bitset<16>(registers).count() < 1)
+                    {
+                        std::cout << "unpredictable" << std::endl;
+                        return;
+                    }
+
+                    bool wback = true;
+
+
+                    uint8_t position = 0;
+
+                    if (registers == 0)
+                    {
+                        position = 16;
+                    }
+                    else
+                    {
+                        uint16_t temp = registers;
+                        while ((temp & 0b1) == 1)
+                        {
+                            temp >>= 1;
+                            position++;
+                        }
+                    }
+
+                    uint32_t address = this->regs[n];
+
+                    for (uint8_t i = 0; i < 15 ; i++)
+                    {
+                        // Isolate the ith bit
+    
+                        if (registers & (0b1 << i))
+                        {
+                            if (i == n && wback && i != position)
+                            {
+                                write32(address, 0xDEADBEEF);
+                            }
+                            else
+                            {
+                                write32(address, this->regs[i]);
+                            }
+
+                            address += 4;
+                        }
+                    }
+
+                    if (wback)
+                    {
+                        this->regs[n] = this->regs[n] + (4 * std::bitset<32>(registers).count());
+                    }
+
+                    break;
+                }
+
+                // STR encoding T1
+                case 0b01100:
+                {
+                    uint8_t t = instruction & 0b111;
+                    
+                    uint8_t n = (instruction >> 3) & 0b111;
+
+                    uint8_t imm5 = (instruction >> 6) & 0b11111;
+
+                    uint32_t imm32 = (uint32_t)(imm5 << 2);
+
+                    bool index = true;
+                    bool add = true;
+                    bool wback = false;
+
+                    uint32_t Rn = this->regs[n];
+
+                    uint32_t offset_addr = add ? Rn + imm32 : Rn - imm32;
+
+                    uint32_t address = index  ? offset_addr : Rn;
+
+                    write32(address, this->regs[t]);
+
+                    if (wback)
+                    {
+                        // logic
+                    }
+
+                    break;
+                }
                 // LDM
                 case 0b11001:
                 {
@@ -973,12 +1198,26 @@ class Cpu
                 // Encoding T1
                 case 0b10110:
                 {
-                    uint8_t imm7 = instruction & 0b1111111;
-                    uint32_t imm32 = ((uint32_t) imm7 << 2);
-                    uint32_t SP = this->regs[13];
-                    auto result = this->addWithCarry(SP, imm32, 0);
-                    this->regs[13] = result.result;
-                    break;
+                    uint8_t seven = (instruction >> 7) & 0b1;
+                    
+                    if (seven)
+                    {
+                        uint8_t imm7 = instruction & 0b1111111;
+                        uint32_t imm32 = ((uint32_t) imm7 << 2);
+                        uint32_t SP = this->regs[13];
+                        auto result = this->addWithCarry(SP, ~imm32, 1);
+                        this->regs[13] = result.result;
+                        break;
+                    }
+                    else
+                    {
+                        uint8_t imm7 = instruction & 0b1111111;
+                        uint32_t imm32 = ((uint32_t) imm7 << 2);
+                        uint32_t SP = this->regs[13];
+                        auto result = this->addWithCarry(SP, imm32, 0);
+                        this->regs[13] = result.result;
+                        break; 
+                    }
                 }
 
                 // ADD (SP plus register) Encoding T1
@@ -1102,6 +1341,7 @@ class Cpu
 
             this->regs[15] += 2;
         }
+
 
     void print_state(void) const
     {
