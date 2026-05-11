@@ -34,7 +34,7 @@ The emulator:
 ├── src/
 ├── emulator // ELF executable emulator programer
 └── CMakeLists.txt 
-
+```
 ---
 
 # Compilation
