@@ -3,6 +3,7 @@
 constexpr uint32_t UART_BASE = 0x40000000;
 constexpr uint32_t UART_DR   = UART_BASE + 0x0;
 constexpr uint32_t UART_SR   = UART_BASE + 0x4;
+
 Cpu::Cpu(size_t ram_size, size_t flash_size) : ram(ram_size), flash(flash_size)
 {
     for(uint8_t i = 0; i < 16; i++)
@@ -92,8 +93,6 @@ uint32_t Cpu::read32(uint32_t address) const
 
     return data;
 }
-
-
 
 
 void Cpu::write32(uint32_t address, uint32_t value)
@@ -225,6 +224,7 @@ InstrClass Cpu::classify(uint16_t instr)
 
     return InstrClass::UNKNOWN;
 }
+
 void Cpu::handleAddSub(uint16_t instr)
 {
     uint8_t I  = (instr >> 10) & 0x1;
@@ -259,7 +259,7 @@ void Cpu::handleAddSub(uint16_t instr)
     }
     else
     {
-                printf("SUB\n");
+        printf("SUB\n");
         // SUB
         auto res = addWithCarry(regs[Rn], ~operand2, 1);
 
@@ -402,23 +402,19 @@ void Cpu::handleSpecialInstructions(uint16_t instruction)
     }
 }
 
-uint32_t Cpu::fetch(void) const
+void Cpu::fetch(void)
 {
     // little endians lsb first
-
     uint32_t pc = this->regs[15];
 
-
-    // printf("pc: %d\n", pc);
-    // uint32_t instr = this->memory[pc] |
-    //     (this->memory[pc + 1] << 8) |
-    //     (this->memory[pc + 2] << 16) |
-    //     (this->memory[pc + 3] << 24);
     uint32_t instr = this->flash[pc] |
-                    (this->flash[pc + 1] << 8) |
+                    (this->flash[pc + 1] << 8)  |
                     (this->flash[pc + 2] << 16) |
                     (this->flash[pc + 3] << 24);
-    return instr;
+
+    // printf("PC: %d\n", this->regs[15]);
+
+    this->fetched_instruction = instr;
 }
 
 uint8_t Cpu::currentCond(uint32_t instruction)
@@ -571,6 +567,7 @@ bool Cpu::is32bitInstruction(uint8_t thumb_mode)
     return false;
 }
 
+
 void Cpu::HandleALUinstr(uint16_t instruction)
 {
     fprintf(stderr, "handle ALU\n");
@@ -581,6 +578,8 @@ void Cpu::HandleALUinstr(uint16_t instruction)
     uint32_t a = regs[rd];
     uint32_t b = regs[rm];
     uint32_t result;
+
+    this->decodedInstruction._ALUInstruction = ALUInstruction(instruction);
 
     switch (op)
     {
@@ -892,6 +891,45 @@ void Cpu::HandleALUinstr(uint16_t instruction)
     }
 }
 
+void Cpu::executeLoadStoreHalf(void)
+{
+    LoadStoreHalfInstruction decoded = this->decodedInstruction.loadStoreHalfInstruction;
+    
+    uint8_t imm5 = decoded.imm5;
+    uint8_t n = decoded.rn;
+    uint8_t t = decoded.rt; 
+
+    if (decoded.opcode) 
+    {
+        uint32_t imm32 = (uint32_t)(imm5 << 2);
+
+        uint32_t Rn = this->regs[n];
+
+        uint32_t offset_addr = Rn + imm32;
+
+        uint32_t address = offset_addr;
+
+        this->regs[t] = read16(address);
+    } 
+    else 
+    {
+        uint32_t imm32 = (uint32_t)(imm5 << 2);
+
+        bool index = true;
+        bool add = true;
+        bool wback = false;
+
+        uint32_t Rn = this->regs[n];
+
+        uint32_t offset_addr = add ? Rn + imm32 : Rn - imm32;
+
+        uint32_t address = index  ? offset_addr : Rn;
+
+        fprintf(stderr, "addr: %x\n", address);
+        write16(address, (uint16_t) this->regs[t]);
+    }
+}
+
 void Cpu::handleLoadStoreHalf(uint16_t instr) 
 {
     bool L    = (instr >> 11) & 0x1;
@@ -933,6 +971,99 @@ void Cpu::handleLoadStoreHalf(uint16_t instr)
         write16(address, (uint16_t) this->regs[t]);
     }
 }
+
+
+void Cpu::executeLoadStoreImm(void)
+{
+    LoadStoreImmInstruction decoded = this->decodedInstruction.loadStoreImmInstruction;
+    uint8_t imm5 = decoded.imm5;
+    uint8_t n = decoded.rn;
+    uint8_t t = decoded.rt;
+
+    switch (decoded.opcode) 
+    {
+        case 0b00: // STR (word)
+        {
+            
+            fprintf(stderr, "STR (IMMEDIATE)\n");
+            uint32_t imm32 = (uint32_t)(imm5 << 2);
+            uint32_t offset_addr = this->regs[n] + imm32;
+            uint32_t address = offset_addr;
+            
+
+            fprintf(stderr,"Rn = r%d = 0x%08x\n", n, regs[n]);
+            fprintf(stderr,"Rt = r%d = 0x%08x\n", t, regs[t]);
+            fprintf(stderr,"Address = 0x%08x\n", address);
+
+            write32(address, this->regs[t]);
+
+            break;
+        }
+
+        case 0b01: // LDR (word)
+        {
+
+            fprintf(stderr,"LDR (IMMEDIATE)\n");
+
+            uint32_t imm32 = imm5 << 2;
+
+            uint32_t address = regs[n] + imm32;
+
+            fprintf(stderr,"Rn = r%d = 0x%08x\n", n, regs[n]);
+            fprintf(stderr,"Rt = r%d = 0x%08x\n", t, regs[t]);
+            fprintf(stderr,"Address = 0x%08x\n", address);
+
+            uint32_t value = read32v2(address);
+
+            fprintf(stderr,"Loaded value = 0x%08x\n", value);
+
+            regs[t] = value;
+
+            break;
+        }
+
+        case 0b10: // STRB
+        {
+            fprintf(stderr,"STRB (IMMEDIATE)\n");
+            uint32_t imm32 = (uint32_t)(imm5 << 2);
+
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            uint32_t offset_addr = add ? Rn + imm32 : Rn - imm32;
+
+            uint32_t address = index  ? offset_addr : Rn;
+
+            write8(address, this->regs[t]);
+
+            break;
+        }
+
+        case 0b11: // LDRB
+        {
+           fprintf(stderr,"LDRB (IMMEDIATE)\n");
+            uint32_t imm32 = (uint32_t)(imm5 << 2);
+
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            uint32_t offset_addr = add ? Rn + imm32 : Rn - imm32;
+
+            uint32_t address = index  ? offset_addr : Rn;
+
+            this->regs[t] = (uint32_t) read8(address);
+
+            break;
+        }
+    }
+}
+
 
 void Cpu::handleLoadStoreImm(uint16_t instr) 
 {
@@ -1027,6 +1158,7 @@ void Cpu::handleLoadStoreImm(uint16_t instr)
     }
 }
 
+
 void Cpu::handleLDRLiteral(uint16_t instruction)
 {
    fprintf(stderr,"LDR Literal\n");
@@ -1043,30 +1175,14 @@ void Cpu::handleLDRLiteral(uint16_t instruction)
     this->regs[t] = read32v2(address);
 }
 
+
+
 void Cpu::handleShiftImmediate(uint16_t instr)
 {
     fprintf(stderr,"LSL (Immediate)\n");
-    uint8_t m = (instr >> 3) & 0x7;
-    uint8_t d = (instr) & 0x7;
-    uint8_t  imm5 = (instr >> 6) & 0b11111;
 
-
-    fprintf(stderr, "imm5: %d\n", imm5);
-    if (imm5 == 0x0)
-    {
-        fprintf(stderr, "SEE MOV\n");
-        // See MOV
-    }
-    auto result = decodeImmShift(0b00, imm5);
-
-    auto shifted = shift_c(this->regs[m], SRType_LSL, result.n, aspr.C);
-    this->regs[d] = shifted.result;
-
-    this->aspr.N = (shifted.result >> 31) & 0b1;
-    this->aspr.C = shifted.carry_out;
-    this->aspr.Z = shifted.result == 0x0;
-
-    this->regs[15] += 2;
+    this->decodedInstruction.shiftImmediateInstruction = ShiftImmediateInstruction(instr);
+    this->decodeImmShiftResult = decodeImmShift(0b00, this->decodedInstruction.shiftImmediateInstruction.reserved);
 }
 
 std::pair<uint32_t, bool> Cpu::LSL_C(uint32_t x, int shift)
@@ -1174,6 +1290,8 @@ uint32_t Cpu::read32v2(uint32_t address) const
     }
 }
 
+
+
 void Cpu::handleMovCmpAddSub(uint16_t instr)
 {
     uint8_t op  = (instr >> 11) & 0b11;
@@ -1231,213 +1349,513 @@ void Cpu::setPrimaskPM(bool value)
     this->primask |= value;
 }
 
+
+void Cpu::executeMisc(void)
+{
+    switch (misc_type)
+    {
+        case SEV:
+
+        
+            // Handle SEV
+            break;
+
+        case NOP:
+            // Handle NOP
+            break;
+
+        case SVC:
+            // Handle SVC
+            exceptionTaken(11);
+            break;
+
+        case CPS:
+            // Handle CPS
+            break;
+
+        case SUBADD:
+        // Handle SUBADD
+        {
+            AddSubSpInstruction decoded = this->decodedInstruction._AddSubSpInstruction;
+           
+            const uint8_t imm7 = decoded.imm7;
+            const uint32_t imm32 = ((uint32_t) imm7 << 2);
+
+            if (decoded.bits_7)
+            {
+                fprintf(stderr, "SUB\n");
+                const auto result = this->addWithCarry(getSP(), ~imm32, 1);
+                this->regs[13] = result.result;
+            }
+            else
+            {
+                fprintf(stderr, "ADD\n");
+                const auto result = this->addWithCarry(getSP(), imm32, 0);
+                this->regs[13] = result.result;
+            }
+
+            break;
+        }
+
+        case PUSHPOP:
+        // Handle PUSHPOP
+        {
+            PushPopInstruction decoded = this->decodedInstruction._PushPopInstruction;
+        
+            bool M = decoded.M;    // LR (push) / PC (pop)
+            uint8_t register_list = decoded.register_list;
+
+            if (decoded.op) 
+            {
+                fprintf(stderr, "POP\n");
+                uint32_t registers = register_list << 7;
+
+                if (std::bitset<32>(registers).count() < 1)
+                {
+                    return;
+                }   
+
+                uint32_t address = this->getSP();
+
+                for (uint8_t i = 0; i < 8 ; i++)
+                {
+                    // Isolate the ith bit
+                    if (registers & (0b1 << i))
+                    {
+                        this->regs[i] = this->read32(address);
+                        address += 4;
+                    }
+                }
+
+                if (registers & (0b1 << 15))
+                {
+                    this->BXWritePC(address);
+                }
+
+                this->regs[13] += (4 * std::bitset<32>(registers).count());
+            } 
+            else 
+            {
+                fprintf(stderr, "PUSH\n");
+               
+
+                //             0 : M : 000 000 : 0000 0000
+                //                               
+                uint32_t registers =  register_list | (M << 13);
+
+
+                uint32_t address = getSP() - (4 * std::bitset<32>(registers).count());
+
+                fprintf(stderr, "handleMisc(): adddress: %x\n", address);
+
+                for (int i = 0; i < 15; i++)
+                {
+                    if (register_list & (1 << i))
+                    {
+                        write32(address, regs[i]);
+                        address += 4;
+                    }
+                }
+
+                this->regs[13] -= (4 * std::bitset<32>(registers).count());
+            }
+
+             break;
+           }
+
+        // Handle REV
+        case REV:
+        {
+           RevInstruction decoded = this->decodedInstruction._RevInstruction;
+
+            uint8_t m = decoded.rm;
+            uint8_t d = decoded.rd;
+
+            // uint32_t v = regs[rm];
+
+            switch (decoded.op) 
+            {
+                case 0: // REV
+                {   
+                    uint32_t Rm = this->regs[m];
+
+                    uint32_t result = 
+                    (Rm & 0xFF) << 24 | 
+                    ((Rm >> 8) & 0xFF) << 16 | 
+                    ((Rm >> 16) & 0xFF) << 8 |
+                    ((Rm >> 24) & 0xFF);
+
+                break;
+                }
+
+                case 1: // REV16
+                {
+                    uint32_t Rm = regs[m];
+
+                    uint32_t result =
+                        ((Rm & 0x00FF00FF) << 8) |
+                        ((Rm & 0xFF00FF00) >> 8);
+
+                    regs[d] = result;
+                    break;
+                }
+
+                case 3: // REVSH
+                {
+                    uint32_t Rm = regs[m];
+
+                    // Extract low 16 bits
+                    uint16_t half = Rm & 0xFFFF;
+
+                    // Swap bytes
+                    uint16_t swapped = (half >> 8) | (half << 8);
+
+                    // Sign extend to 32-bit
+                    int32_t result = (int16_t)swapped;
+
+                    regs[d] = (uint32_t)result;
+                    break;
+                }
+            }
+
+            break;
+        }
+
+        case EXTEND:
+        {
+            ExtendInstruction decoded = this->decodedInstruction._ExtendInstruction;
+
+            uint8_t m = decoded.rm;
+            uint8_t d = decoded.rd;
+
+            switch (decoded.op) 
+            {
+                case 0:
+                {
+                    uint8_t rotation = 0;
+                    const auto result = this->ROR(this->regs[m], rotation);
+                    this->regs[d] = sign_extend((uint16_t) result, 32);
+
+                    break; 
+                    // SXTH
+                }
+                case 1:
+                {
+                    uint8_t rotation = 0;
+                    const auto result = this->ROR(this->regs[m], rotation);
+                    
+                    this->regs[d] = sign_extend((uint8_t) result, 32);
+                    break; // SXTB;
+                }
+                
+                case 2:               
+                {
+                    uint8_t rotation = 0;
+                    const auto result = this->ROR(this->regs[m], rotation);
+                    
+                    this->regs[d] = (uint16_t) result;
+                    break; // UXTH;
+                }
+                case 3:                     
+                {
+                    uint8_t rotation = 0;
+                    const auto result = this->ROR(this->regs[m], rotation);
+                    
+                    this->regs[d] = (uint8_t )result;
+                    break; // UXTB;
+                }
+            }
+            break;
+        }
+        default:
+            // Handle unknown type
+            break;
+    }
+}
+
+
+
 void Cpu::handleMisc(uint16_t instr) 
 {
-    // CPS
+    if ((instr & 0xFFFF) == 0b1011111101000000) 
+    {
+        fprintf(stderr, "SEV\n");
+
+        // send events 
+        this->misc_type = SEV;
+        return;
+    }
+
+    if ((instr & 0xFFFF) == 0b1011111100000000) 
+    {
+        fprintf(stderr, "NOP\n");
+
+        // Literally do nothing
+        // send events 
+        this->misc_type = NOP;
+        return;
+    }
+
+    if ((instr & 0xFF) == 0b1011111100000000) 
+    {
+        fprintf(stderr, "SVC");
+
+        this->misc_type = SVC;
+
+        uint8_t imm32 = instr & 0xFF;
+        exception_request = 1;
+        exception_number = 11;
+        // SVC Exception how tf do we cause that
+        // send events 
+
+        return;
+    }
+
 
     if ((instr & 0b1111111111100000) == 0b1011011001100000) 
     {
         fprintf(stderr, "CPS\n");
 
-        bool im = instr & (0b1 << 4);
+        this->misc_type = CPS;
 
 
-        setPrimaskPM(im);
+        this->decodedInstruction.cPSInstruction = CPSInstruction(instr);
 
+        // bool im = instr & (0b1 << 4);
+        // setPrimaskPM(im);
         return;
     }
 
     // ---- ADD / SUB SP ----
     if ((instr & 0b1111111100000000) == 0b1011000000000000) 
     {
-        bool S = (instr >> 7) & 1;     // 0=ADD, 1=SUB
-        const uint8_t imm7 = instr & 0b1111111;
-        const uint32_t imm32 = ((uint32_t) imm7 << 2);
+        this->misc_type = SUBADD;
 
-        if (S)
-        {
-            fprintf(stderr, "SUB\n");
-            const auto result = this->addWithCarry(getSP(), ~imm32, 1);
-            this->regs[13] = result.result;
-        }
-        else
-        {
-            fprintf(stderr, "ADD\n");
-            const auto result = this->addWithCarry(getSP(), imm32, 0);
-            this->regs[13] = result.result;
-        }
+        this->decodedInstruction._AddSubSpInstruction = AddSubSpInstruction(instr);
+        // bool S = (instr >> 7) & 1;     // 0=ADD, 1=SUB
+        // const uint8_t imm7 = instr & 0b1111111;
+        // const uint32_t imm32 = ((uint32_t) imm7 << 2);
+
+
+
+        // if (S)
+        // {
+        //     fprintf(stderr, "SUB\n");
+        //     const auto result = this->addWithCarry(getSP(), ~imm32, 1);
+        //     this->regs[13] = result.result;
+        // }
+        // else
+        // {
+        //     fprintf(stderr, "ADD\n");
+        //     const auto result = this->addWithCarry(getSP(), imm32, 0);
+        //     this->regs[13] = result.result;
+        // }
 
         return;
     }
 
     // // ---- PUSH / POP ----
     if ((instr & 0b1111000000000000) == 0b1011000000000000) {
-        bool L = (instr >> 11) & 1;   // 0=PUSH, 1=POP
-        bool R = (instr >> 8) & 1;    // LR (push) / PC (pop)
-        uint8_t register_list = instr & 0xFF;
-
-        if (L) 
-        {
-            fprintf(stderr, "POP\n");
-            uint32_t registers = register_list << 7;
-
-            if (std::bitset<32>(registers).count() < 1)
-            {
-                return;
-            }   
-
-            uint32_t address = this->getSP();
-
-            for (uint8_t i = 0; i < 8 ; i++)
-            {
-                // Isolate the ith bit
-                if (registers & (0b1 << i))
-                {
-                    this->regs[i] = this->read32(address);
-                    address += 4;
-                }
-            }
-
-            if (registers & (0b1 << 15))
-            {
-                this->BXWritePC(address);
-            }
-
-            this->regs[13] += (4 * std::bitset<32>(registers).count());
-        } 
-        else 
-        {
-            fprintf(stderr, "PUSH\n");
-            bool M = (instr >> 8) & 1; 
-
-            //             0 : M : 000 000 : 0000 0000
-            //                               
-            uint32_t registers =  register_list | (M << 13);
+        this->misc_type = PUSHPOP;
+        this->decodedInstruction._PushPopInstruction = PushPopInstruction(instr);
+        // bool L = (instr >> 11) & 1;   // 0=PUSH, 1=POP
+        // bool R = (instr >> 8) & 1;    // LR (push) / PC (pop)
+        // uint8_t register_list = instr & 0xFF;
 
 
-            uint32_t address = getSP() - (4 * std::bitset<32>(registers).count());
+        // if (L) 
+        // {
+        //     fprintf(stderr, "POP\n");
+        //     uint32_t registers = register_list << 7;
 
-            fprintf(stderr, "handleMisc(): adddress: %x\n", address);
+        //     if (std::bitset<32>(registers).count() < 1)
+        //     {
+        //         return;
+        //     }   
 
-            for (int i = 0; i < 15; i++)
-            {
-                if (register_list & (1 << i))
-                {
-                    write32(address, regs[i]);
-                    address += 4;
-                }
-            }
+        //     uint32_t address = this->getSP();
 
-            this->regs[13] -= (4 * std::bitset<32>(registers).count());
-        }
+        //     for (uint8_t i = 0; i < 8 ; i++)
+        //     {
+        //         // Isolate the ith bit
+        //         if (registers & (0b1 << i))
+        //         {
+        //             this->regs[i] = this->read32(address);
+        //             address += 4;
+        //         }
+        //     }
+
+        //     if (registers & (0b1 << 15))
+        //     {
+        //         this->BXWritePC(address);
+        //     }
+
+        //     this->regs[13] += (4 * std::bitset<32>(registers).count());
+        // } 
+        // else 
+        // {
+        //     fprintf(stderr, "PUSH\n");
+        //     bool M = (instr >> 8) & 1; 
+
+        //     //             0 : M : 000 000 : 0000 0000
+        //     //                               
+        //     uint32_t registers =  register_list | (M << 13);
+
+
+        //     uint32_t address = getSP() - (4 * std::bitset<32>(registers).count());
+
+        //     fprintf(stderr, "handleMisc(): adddress: %x\n", address);
+
+        //     for (int i = 0; i < 15; i++)
+        //     {
+        //         if (register_list & (1 << i))
+        //         {
+        //             write32(address, regs[i]);
+        //             address += 4;
+        //         }
+        //     }
+
+        //     this->regs[13] -= (4 * std::bitset<32>(registers).count());
+        // }
         return;
     }
 
     // ---- EXTEND (UXTB/SXTB/UXTH/SXTH) ----
     if ((instr & 0b1111110000000000) == 0b1011001000000000) {
-        uint8_t op = (instr >> 6) & 0x3;
-        uint8_t m = (instr >> 3) & 0x7;
-        uint8_t d = instr & 0x7;
 
-        switch (op) 
-        {
-            case 0:
-            {
-                uint8_t rotation = 0;
-                const auto result = this->ROR(this->regs[m], rotation);
-                
-                this->regs[d] = sign_extend((uint16_t) result, 32);
+        this->misc_type = EXTEND;
+        this->decodedInstruction._ExtendInstruction = ExtendInstruction(instr);
+        // uint8_t op = (instr >> 6) & 0x3;
+        // uint8_t m = (instr >> 3) & 0x7;
+        // uint8_t d = instr & 0x7;
 
-                break; 
-                // SXTH
-            }
-            case 1:
-            {
-                uint8_t rotation = 0;
-                const auto result = this->ROR(this->regs[m], rotation);
+        // switch (op) 
+        // {
+        //     case 0:
+        //     {
+        //         uint8_t rotation = 0;
+        //         const auto result = this->ROR(this->regs[m], rotation);
                 
-                this->regs[d] = sign_extend((uint8_t) result, 32);
-                break; // SXTB;
-            }
+        //         this->regs[d] = sign_extend((uint16_t) result, 32);
+
+        //         break; 
+        //         // SXTH
+        //     }
+        //     case 1:
+        //     {
+        //         uint8_t rotation = 0;
+        //         const auto result = this->ROR(this->regs[m], rotation);
+                
+        //         this->regs[d] = sign_extend((uint8_t) result, 32);
+        //         break; // SXTB;
+        //     }
             
-            case 2:               
-            {
-                uint8_t rotation = 0;
-                const auto result = this->ROR(this->regs[m], rotation);
+        //     case 2:               
+        //     {
+        //         uint8_t rotation = 0;
+        //         const auto result = this->ROR(this->regs[m], rotation);
                 
-                this->regs[d] = (uint16_t) result;
-                break; // UXTH;
-            }
-            case 3:                     
-            {
-                uint8_t rotation = 0;
-                const auto result = this->ROR(this->regs[m], rotation);
+        //         this->regs[d] = (uint16_t) result;
+        //         break; // UXTH;
+        //     }
+        //     case 3:                     
+        //     {
+        //         uint8_t rotation = 0;
+        //         const auto result = this->ROR(this->regs[m], rotation);
                 
-                this->regs[d] = (uint8_t )result;
-                break; // UXTB;
-            }
-        }
+        //         this->regs[d] = (uint8_t )result;
+        //         break; // UXTB;
+        //     }
+        // }
         return;
     }
 
     // REV family
-    if ((instr & 0b1111110000000000) == 0b1011101000000000) {
-        uint8_t op = (instr >> 6) & 0x3;
-        uint8_t m = (instr >> 3) & 0x7;
-        uint8_t d = instr & 0x7;
+    if ((instr & 0b1111110000000000) == 0b1011101000000000) 
+    {
+        this->misc_type = REV;
+        this->decodedInstruction._RevInstruction = RevInstruction(instr);
+        // uint8_t op = (instr >> 6) & 0x3;
+        // uint8_t m = (instr >> 3) & 0x7;
+        // uint8_t d = instr & 0x7;
 
-        // uint32_t v = regs[rm];
+        // // uint32_t v = regs[rm];
 
-        switch (op) 
-        {
-            case 0: // REV
-            {   
-                uint32_t Rm = this->regs[m];
+        // switch (op) 
+        // {
+        //     case 0: // REV
+        //     {   
+        //         uint32_t Rm = this->regs[m];
                 
-                uint32_t result = 
-                (Rm & 0xFF) << 24 | 
-                ((Rm >> 8) & 0xFF) << 16 | 
-                ((Rm >> 16) & 0xFF) << 8 |
-                ((Rm >> 24) & 0xFF);
+        //         uint32_t result = 
+        //         (Rm & 0xFF) << 24 | 
+        //         ((Rm >> 8) & 0xFF) << 16 | 
+        //         ((Rm >> 16) & 0xFF) << 8 |
+        //         ((Rm >> 24) & 0xFF);
 
-                break;
-            }
+        //         break;
+        //     }
 
-            case 1: // REV16
-            {
-                uint32_t Rm = regs[m];
+        //     case 1: // REV16
+        //     {
+        //         uint32_t Rm = regs[m];
 
-                uint32_t result =
-                    ((Rm & 0x00FF00FF) << 8) |
-                    ((Rm & 0xFF00FF00) >> 8);
+        //         uint32_t result =
+        //             ((Rm & 0x00FF00FF) << 8) |
+        //             ((Rm & 0xFF00FF00) >> 8);
 
-                regs[d] = result;
-                break;
-            }
+        //         regs[d] = result;
+        //         break;
+        //     }
 
-            case 3: // REVSH
-            {
-                uint32_t Rm = regs[m];
+        //     case 3: // REVSH
+        //     {
+        //         uint32_t Rm = regs[m];
 
-                // Extract low 16 bits
-                uint16_t half = Rm & 0xFFFF;
+        //         // Extract low 16 bits
+        //         uint16_t half = Rm & 0xFFFF;
 
-                // Swap bytes
-                uint16_t swapped = (half >> 8) | (half << 8);
+        //         // Swap bytes
+        //         uint16_t swapped = (half >> 8) | (half << 8);
 
-                // Sign extend to 32-bit
-                int32_t result = (int16_t)swapped;
+        //         // Sign extend to 32-bit
+        //         int32_t result = (int16_t)swapped;
 
-                regs[d] = (uint32_t)result;
-                break;
-            }
-        }
+        //         regs[d] = (uint32_t)result;
+        //         break;
+        //     }
+        // }
         return;
     }
 }
     
 
-void Cpu::handleAddr(uint16_t instr) 
+void Cpu::executeAdr(void)
+{
+    AdrInstruction decoded = this->decodedInstruction.adrInstruction;
+
+    uint8_t d   = decoded.rd;
+    uint8_t imm8 = decoded.imm8;
+    uint32_t imm32 = ((uint32_t) imm8) << 2;
+
+    if (decoded.bits_11) 
+    {
+        // ADD (SP plust immediate)
+        uint32_t SP = this->regs[13];
+
+        auto result = this->addWithCarry(SP, imm32, 0);
+        this->regs[d] = result.result;
+    } 
+    else 
+    {
+        // ADR
+        uint32_t result = (this->regs[15] + 4) & ~0x3;
+        this->regs[d] = result;
+    } 
+}
+
+
+void Cpu::handleAdr(uint16_t instr) 
 {
     bool S    = (instr >> 11) & 0x1;
     uint8_t d   = (instr >> 8) & 0x7;
@@ -1460,6 +1878,142 @@ void Cpu::handleAddr(uint16_t instr)
         uint32_t result = (this->regs[15] + 4) & ~0x3;
         this->regs[d] = result;
     }
+}
+
+
+void Cpu::executeLoadStoreReg(void)
+{
+    LoadStoreRegInstruction decoded = this->decodedInstruction.loadStoreRegInstruction;
+    
+    uint8_t m = decoded.rm;
+    uint8_t t = decoded.rt;
+    uint8_t n = decoded.rn;
+
+    switch (decoded.opcode) 
+    {
+        case 0b000: // STR
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;                  
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+            uint32_t address = this->regs[n] + offset;
+            write32(address, this->regs[t]);
+            
+            break;
+        }
+        case 0b001: // STRH
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;                  
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+            uint32_t address = this->regs[n] + offset;
+            
+            write16(address, this->regs[t]);
+            
+            break;
+        }
+        case 0b010: // STRB
+        {   
+            bool index = true;
+            bool add = true;
+            bool wback = false;                  
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+            uint32_t address = this->regs[n] + offset;
+            
+            write8(address, this->regs[t]);
+            break;
+        }
+        case 0b011: // LDRSB
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            uint32_t offset_addr =  add ? Rn + offset : Rn - offset;
+            uint32_t address = index ? offset_addr : Rn;
+
+            uint8_t data = this->read8(address);
+
+            this->regs[t] = sign_extend(data, 32); 
+            break;   
+        }
+        case 0b100: // LDR
+        {
+
+            fprintf(stderr, "LDR (Register)\n");
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            uint32_t offset_addr =  add ? Rn + offset : Rn - offset;
+            uint32_t address = index ? offset_addr : Rn;
+
+            this->regs[t] = this->read32(address);
+            break;
+        }
+        case 0b101: // LDRH
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            uint32_t offset_addr =  add ? Rn + offset : Rn - offset;
+            uint32_t address = index ? offset_addr : Rn;
+
+            this->regs[t] = (uint32_t) this->read16(address);
+    
+            break;
+        }
+        case 0b110: // LDRB
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            uint32_t offset_addr =  add ? Rn + offset : Rn - offset;
+            uint32_t address = index ? offset_addr : Rn;
+
+            this->regs[t] = (uint32_t) this->read8(address);
+    
+            break;
+        }
+        case 0b111: // LDRSH
+        {
+            bool index = true;
+            bool add = true;
+            bool wback = false;
+
+            uint32_t Rn = this->regs[n];
+
+            const auto offset = shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            uint32_t offset_addr =  add ? Rn + offset : Rn - offset;
+            uint32_t address = index ? offset_addr : Rn;
+
+            this->regs[t] = sign_extend(this->read16(address), 32);
+    
+            break;
+        }
+    }
+
 }
 
 void Cpu::handleLoadStoreReg(uint16_t instr)
@@ -1596,6 +2150,30 @@ void Cpu::handleLoadStoreReg(uint16_t instr)
     }
 }
 
+void Cpu::executeSpRelative(void)
+{
+    SpRelativeInstruction decoded = this->decodedInstruction.SpRelativeInstruction;
+
+    uint8_t t   = decoded.rt;
+    uint8_t imm8 = decoded.imm8;
+    uint8_t n = 13;
+    uint32_t imm32 = (uint32_t)(imm8 << 2); 
+    uint32_t Rn = this->regs[n];
+    
+    if (decoded.opcode) 
+    {
+        uint32_t offset_addr = Rn + imm32;
+        this->regs[t] = read32(offset_addr);
+    } 
+    else 
+    {
+        uint32_t offset_addr = Rn + imm32;
+        write32(offset_addr, this->regs[t]);
+    }
+}
+
+
+
 void Cpu::handleSpRelative(uint16_t instr) {
     bool L    = (instr >> 11) & 0x1;
     uint8_t t   = (instr >> 8) & 0x7;
@@ -1633,6 +2211,100 @@ void Cpu::handleSpRelative(uint16_t instr) {
         uint32_t address = index  ? offset_addr : Rn;
 
         write32(address, this->regs[t]);
+    }
+}
+
+void Cpu::executeMultiple()
+{
+    LoadMultipleInstruction decoded = this->decodedInstruction._LoadMultipleInstruction;
+
+    uint8_t n = decoded.rn;
+    uint8_t register_list = decoded.register_list;
+
+    if (decoded.op) 
+    {
+        // ---- LDMIA (load multiple) ----
+        uint16_t registers = (uint16_t) register_list;
+
+        bool wback = (registers & 0b1 << n) == 0;
+
+        if (std::bitset<32>(registers).count() < 1)
+        {
+            std::cerr << "unpredictable" << std::endl;
+            return;
+        }
+
+        uint32_t address = this->regs[n];
+
+        for (uint8_t i = 0; i < 8 ; i++)
+        {
+            // Isolate the ith bit
+
+            if (registers & (0b1 << i))
+            {
+                this->regs[i] = this->read32(address);
+                address += 4;
+            }
+        }
+
+        if (wback && (registers & 0b1 << n) == 0)
+        {
+            this->regs[n] = this->regs[n] + (4 * std::bitset<32>(registers).count());
+        }
+    } 
+    else 
+    {
+        if (std::bitset<16>(register_list).count() < 1)
+        {
+            std::cerr << "unpredictable" << std::endl;
+            return;
+        }
+
+        bool wback = true;
+
+
+        uint8_t position = 0;
+
+        if (register_list == 0)
+        {
+            position = 16;
+        }
+        else
+        {
+            uint16_t temp = register_list;
+            while ((temp & 0b1) == 1)
+            {
+                temp >>= 1;
+                position++;
+            }
+        }
+
+        uint32_t address = this->regs[n];
+
+        for (uint8_t i = 0; i < 15 ; i++)
+        {
+            // Isolate the ith bit
+
+            if (register_list & (0b1 << i))
+            {
+                if (i == n && wback && i != position)
+                {
+                    write32(address, 0xDEADBEEF);
+                }
+                else
+                {
+                    write32(address, this->regs[i]);
+                }
+
+                address += 4;
+            }
+        }
+
+        if (wback)
+        {
+            registers[n] = this->regs[n] + (4 * std::bitset<32>(register_list).count());
+            this->regs[n] = this->regs[n] + (4 * std::bitset<32>(register_list).count());
+        }
     }
 }
 
@@ -1729,6 +2401,36 @@ void Cpu::handleMultiple(uint16_t instr)
     }
 }
 
+
+void Cpu::executeCondBranch()
+{
+    BranchCondInstruction decoded = this->decodedInstruction._BranchCondInstruction;
+
+    uint8_t cond = decoded.cond;
+    uint8_t imm8 = decoded.imm8;
+
+    if (cond == 0b1110)
+    {
+
+    }
+    else if (cond == 0b1111)
+    {
+
+    }
+
+    int32_t imm32 = sign_extend(imm8 << 1, 9);
+
+    if (conditionPassed(cond))
+    {
+        regs[15] = (regs[15] + 4 + imm32) & ~1;
+    }
+    else
+    {
+        this->regs[15] += 2;
+    }
+};
+
+
 void Cpu::handleCondBranch(uint16_t instr)
 {
     fprintf(stderr, "Handle cond\n");
@@ -1758,7 +2460,18 @@ void Cpu::handleCondBranch(uint16_t instr)
 
 bool Cpu::currentModeIsPrivileged(void)
 {
-    return (this->currentMode == Mode::Handler || (this->control & 0b1) == 0); 
+    return (this->currentMode == Mode::MODE_HANDLER || (this->control.nPRIV & 0b1) == 0); 
+}
+
+void Cpu::executeUncondBranch()
+{
+    BranchUncondInstruction decoded = this->decodedInstruction._BranchUncondInstruction;
+
+    int32_t imm32 = sign_extend(decoded.imm11 << 1, 12);
+
+    uint32_t next_pc = this->regs[15] + 4;
+
+    this->regs[15] = next_pc + imm32;
 }
 
 void Cpu::handleUncondBranch(uint16_t instr)
@@ -1773,16 +2486,597 @@ void Cpu::handleUncondBranch(uint16_t instr)
     this->regs[15] = next_pc + imm32;
 }
 
+void Cpu::executeShiftImmediate(void)
+{
+    fprintf(stderr,"LSL (Immediate)\n");
+    ShiftImmediateInstruction decoded = this->decodedInstruction.shiftImmediateInstruction;
+    DecodeImmShiftResult result = this->decodeImmShiftResult;
+    auto shifted = shift_c(this->regs[decoded.rm], SRType_LSL, result.n, aspr.C);
+    this->regs[decoded.rd] = shifted.result;
+    
+    this->aspr.N = (shifted.result >> 31) & 0b1;
+    this->aspr.C = shifted.carry_out;
+    this->aspr.Z = shifted.result == 0x0;
+
+    this->regs[15] += 2;
+}
+
+void Cpu::executeALUinstr(void)
+{
+    ALUInstruction decoded = this->decodedInstruction._ALUInstruction;
+
+    uint8_t n = decoded.rdn;
+    uint8_t d = decoded.rdn;
+    uint8_t m = decoded.rm;
+
+    switch (decoded.opcode)
+    {
+        case 0x0: // AND
+        {
+            fprintf(stderr, "AND\n");
+            uint32_t Rm = this->regs[m];
+
+            uint8_t shift_n = 0;
+            SRType type = SRType_LSL;    
+            Shift_c shifted = this->shift_c(Rm, type, shift_n, this->aspr.C);                              
+
+            uint32_t result = shifted.result & this->regs[n];
+
+            this->regs[d] = result;
+            this->aspr.N = shifted.result >> 31;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = shifted.result == 0x0;
+            break;
+        }
+
+        case 0x1: // EOR
+        {
+            fprintf(stderr, "EOR\n");
+
+            uint32_t Rm = this->regs[m];
+            uint32_t Rn = this->regs[n];
+
+            Shift_c shifted = this->shift_c(Rm, SRType_LSL, 0, aspr.C);
+
+            uint32_t result = Rn ^ shifted.result;
+
+            this->regs[d] = result;
+
+            this->aspr.N = (result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = result == 0x0;
+            
+            break;
+        }
+
+        case 0x2: // LSL (register)
+        {
+            fprintf(stderr, "LSL (register)\n");
+            const uint8_t shift_n = 0;
+
+            const SRType type = SRType_LSL;
+
+            const uint32_t Rm = this->regs[m];
+            const uint32_t Rn = this->regs[n];
+            const uint32_t shifted = this->shift(Rm, type, shift_n, this->aspr.C);
+
+            const AddCarryResult carry_result = this->addWithCarry(Rn,shifted, this->aspr.C);
+
+            this->regs[d] = carry_result.result;
+
+            this->aspr.N = (carry_result.result >> 31) & 0b1;
+            this->aspr.C = carry_result.carry_out;
+            this->aspr.Z = carry_result.result == 0x0;
+            this->aspr.V = carry_result.overflow;
+            break;
+        }
+
+        case 0x3: // LSR (register)
+        {
+            fprintf(stderr, "LSR (register)\n");
+            const uint8_t shift_n = this->regs[m];
+
+            const auto shifted = this->shift_c(this->regs[n], SRType_LSR, shift_n, this->aspr.C);
+
+            this->regs[d] = shifted.result;
+            
+            this->aspr.N = (shifted.result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = shifted.result == 0x0;
+        
+            break;
+        }
+
+        case 0x4: // ASR (register)
+        {
+            fprintf(stderr, "ASR (register)\n");
+            const uint8_t shift_n = this->regs[m];
+
+            const auto shifted = this->shift_c(this->regs[n], SRType_ASR, shift_n, this->aspr.C);
+
+            this->regs[d] = shifted.result;
+            
+            this->aspr.N = (shifted.result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = shifted.result == 0x0;
+            break;
+        }
+
+        case 0x5: // ADC
+        {
+            fprintf(stderr, "ADC\n");
+            const auto shifted = this->shift(this->regs[m], SRType_LSL, 0, this->aspr.C);
+            const auto result = addWithCarry(this->regs[n], shifted, aspr.C);
+
+            this->regs[d] = result.result;
+
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.C = result.carry_out;
+            this->aspr.Z = result.result == 0x0;
+            this->aspr.V = result.overflow;
+
+            break;
+        }
+        case 0x6: // SBC
+        {
+            fprintf(stderr, "SBC\n");
+            const auto shifted = this->shift(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            const auto result = addWithCarry(this->regs[n], ~shifted , aspr.C);
+
+            this->regs[d] = result.result;
+
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.Z = result.result == 0x0;
+            this->aspr.C = result.carry_out;
+            this->aspr.V = result.overflow;
+
+            break;
+        }
+
+        case 0x7: // ROR
+        {
+            fprintf(stderr, "ROR\n");
+            uint8_t shift_n = this->regs[m] & 0xFF;
+
+            auto result = shift_c(this->regs[n], SRType_ROR, shift_n, aspr.C);
+
+            this->regs[d] = result.result;
+
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.Z = result.result == 0x0;
+            this->aspr.C = result.carry_out;
+            break;
+        }
+
+        case 0x8: // TST (no write)
+        {
+            fprintf(stderr, "TST\n");
+            const auto shifted = this->shift_c(this->regs[m], SRType_LSL, 0, aspr.C);     
+
+            const uint32_t result = this->regs[n] & shifted.result;
+
+            this->aspr.N = result >> 31;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = result == 0x0;
+            break;
+        }
+
+        case 0x9: // NEG
+        {
+            fprintf(stderr, "NEG\n");
+
+            auto result = addWithCarry(~(this->regs[n]), 0, true);
+
+            this->regs[d] = result.result;
+
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.Z = result.result == 0x0;
+            this->aspr.C = result.carry_out;
+            this->aspr.V = result.overflow;
+            break;
+        }
+
+        case 0xA: // CMP (no write)
+        {
+            fprintf(stderr, "CMP (Register)\n");
+            const uint32_t shifted = this->shift(this->regs[m], SRType_LSL, 0, this->aspr.C); 
+            const auto result = addWithCarry(this->regs[n], ~shifted, 1);
+            
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.V = result.overflow;
+            this->aspr.C = result.carry_out;
+            this->aspr.Z = result.result == 0x0;
+            break;
+        }
+
+        case 0xB: // CMN (no write)
+        {
+            fprintf(stderr, "CMN (Register)\n");
+
+            const uint32_t shifted = this->shift(this->regs[m], SRType_LSL, 0, this->aspr.C); 
+
+            const auto result = addWithCarry(this->regs[n], shifted, 0);
+            
+            this->aspr.N = (result.result >> 31) & 0b1;
+            this->aspr.V = result.overflow;
+            this->aspr.C = result.carry_out;
+            this->aspr.Z = result.result == 0x0;
+
+            break;
+        }
+
+        case 0xC: // ORR
+        {
+            fprintf(stderr, "ORR (Register)\n");
+            const Shift_c shifted = this->shift_c(this->regs[m], SRType_LSL, 0, aspr.C);
+
+            const uint32_t result = this->regs[n] | shifted.result;
+
+            this->regs[d] = result;
+            this->aspr.N = (result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = result == 0x0;
+            break;
+        }
+        case 0xD: // MUL
+        {
+            fprintf(stderr, "MUL\n");
+            uint32_t operand1 = this->regs[n];
+            uint32_t operand2 = this->regs[m];
+
+            uint64_t result = operand2 * operand1;
+
+            this->regs[d] = (uint32_t) result;
+
+            this->aspr.N = result >> 31;
+
+            this->aspr.Z = (uint32_t) result == 0;
+            break;
+        }
+
+        case 0xE: // BIC
+        {
+            fprintf(stderr, "BIC\n");
+    
+            Shift_c shifted = this->shift_c(this->regs[m], SRType_LSL, 0, this->aspr.C);                              
+
+            uint32_t result = shifted.result & ~(this->regs[n]);
+
+            this->regs[d] = result;
+
+            this->aspr.N = (shifted.result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = shifted.result == 0x0;
+        }
+
+        case 0xF: // MVN
+        {
+            fprintf(stderr, "MVN");
+            Shift_c shifted = this->shift_c(this->regs[m], SRType_LSL, 0, this->aspr.C);                              
+
+            uint32_t result = ~(shifted.result);
+
+            this->regs[d] = result;
+
+            this->aspr.N = (shifted.result >> 31) & 0b1;
+            this->aspr.C = shifted.carry_out;
+            this->aspr.Z = shifted.result == 0x0;
+            break;
+        }
+    }
+}
+
+void Cpu::executeSpecialInstructions(void)
+{
+    SpecialInstruction decoded = this->decodedInstruction._SpecialInstruction;
+    
+
+    
+}
+
+void Cpu::executeMovCmpAddSub(void)
+{
+    MovCmpAddSubInstruction decoded = this->decodedInstruction.movCmpAddSubInstruction;
+
+    switch (decoded.op)
+    {
+        case 0b00: // MOVS Rd, #imm
+        {
+            fprintf(stderr, "MOV (imm)\n");
+            uint32_t imm32 = (uint32_t) decoded.imm8;
+            this->regs[decoded.d] = imm32;
+
+            aspr.N = (imm32 >> 31) & 0b1;
+            // aspr.C = 
+            aspr.Z = imm32 == 0;
+            break;
+        }
+
+        case 0b01: // CMP Rd, #imm
+        {
+
+            fprintf(stderr, "CMP (imm)\n");
+            uint32_t imm32 = (uint32_t) decoded.imm8;
+            // d == n here
+            const auto result = addWithCarry(this->regs[decoded.d], ~imm32, 1);
+
+            aspr.N = (result.result >> 31) & 0b1;
+            aspr.C = result.carry_out;
+            aspr.Z = imm32 == 0;
+            aspr.V = result.overflow;
+            break;
+        }
+
+        case 0b10: // ADDS Rd, #imm
+        {
+
+            break;
+        }
+
+        case 0b11: // SUBS Rd, #imm
+        {
+
+
+            break;
+        }
+    }
+}
+
+void Cpu::executeLDRLiteral(void)
+{
+    fprintf(stderr, "LDR Literal\n");
+    LDRLiteralInstruction decoded = this->decodedInstruction.lDRLiteralInstruction;
+
+    uint32_t imm32 = (uint32_t)(decoded.imm8 << 2); 
+    uint32_t base = (this->regs[15] + 4) & ~0x3;
+    uint32_t address = base + imm32;
+
+    fprintf(stderr,"imm: %d\n", imm32);
+    fprintf(stderr,"dest reg: %x\n", decoded.rt);
+    fprintf(stderr,"Address %x\n", imm32 + base);
+
+    this->regs[decoded.rt] = read32v2(address);
+}
+
+void Cpu::executeAddSub(void)
+{
+    AddSubImmediateInstruction decoded = this->decodedInstruction._AddSubImmediateInstruction;
+
+    uint8_t I  = decoded.bits_10;
+    uint8_t Op = decoded.bits_9;
+
+    uint8_t Rn = decoded.rn;
+    uint8_t Rs = decoded.imm3;
+    uint8_t Rd = decoded.bits_10;
+
+    uint32_t operand2;
+
+    // immediate or register
+    if (I)
+        operand2 = Rs;          // imm3
+    else
+        operand2 = regs[Rs];    // register
+
+    uint32_t result;
+
+    if (Op == 0)
+    {
+        // ADD
+        printf("ADD\n");
+        auto res = addWithCarry(regs[Rn], operand2, 0);
+
+        result = res.result;
+
+        aspr.N = (result >> 31) & 1;
+        aspr.Z = (result == 0);
+        aspr.C = res.carry_out;
+        aspr.V = res.overflow;
+    }
+    else
+    {
+        printf("SUB\n");
+        // SUB
+        auto res = addWithCarry(regs[Rn], ~operand2, 1);
+
+        result = res.result;
+
+        aspr.N = (result >> 31) & 1;
+        aspr.Z = (result == 0);
+        aspr.C = res.carry_out;
+        aspr.V = res.overflow;
+    }
+    regs[Rd] = result;
+    regs[15] += 2;
+}
+
+void Cpu::execute(void)
+{
+    if (this->instructionType == THUMB2)
+    {   
+        fprintf(stderr, "executing 32 bit instruction\n");
+
+        switch(this->thumb2Class)
+        {
+            case BRANCH_MISC:
+            {
+                switch(this->branch_misc_type)
+                {
+                    case MSR:
+                    {
+                        break;
+                    }
+                    case MRS:
+                    {
+                        break;
+                    }
+                    case UDF:
+                    {
+                        break;
+                    }
+                    case BL:
+                    {
+                        BranchLinkInstruction decoded = this->decodedThumb2Instruction._BranchLinkInstruction;
+                    
+                        bool I1 = !(decoded.J1 ^ decoded.S);
+                        bool I2 = !(decoded.J2 ^ decoded.S);
+
+                        uint32_t imm25 =
+                            (decoded.S  << 24) |
+                            (I1 << 23) |
+                            (I2 << 22) |
+                            (decoded.imm10 << 12) |
+                            (decoded.imm11 << 1);
+
+                        int32_t  imm32 = sign_extend(imm25, 25);
+
+                        uint32_t next = regs[15] + 4;
+                        fprintf(stderr,"BRANCH AND LINK: next pc: %d\n", next);
+                
+                                fprintf(stderr,"BRANCH AND LINK\n imm32: %d\n", imm32);
+
+                        regs[14] = next | 1;
+
+                        regs[15] = next + imm32;
+
+                        fprintf(stderr,"BRANCH AND LINK\n regs[15: %d\n", regs[15]);
+                        break;   
+                    }
+                    default:
+                        break;
+
+                }
+                // 1111 1000 0001 0000       1111 0000 0000 000
+                break;
+            }
+
+
+            default:
+                break;
+            // case 0b11101:
+
+            // BL
+            // case 0b11110:
+            // {
+
+
+            // case 0b11111:
+            //     // 32 bit thumb mode
+            //     // 
+            //     break;
+        }
+    }
+    else
+     {  
+        fprintf(stderr, "Executing 16bit\n");
+         switch (this->instructionClass)
+        {
+            case InstrClass::SHIFT_IMM:
+                executeShiftImmediate();
+                std::cerr << "SHIFT_IMM\n";
+                break;
+
+            case InstrClass::ADD_SUB:
+                executeAddSub();
+                std::cerr << "ADD_SUB\n";
+                break;
+
+            case InstrClass::MOV_CMP_ADD_SUB:
+                executeMovCmpAddSub();
+                std::cerr << "MOV_CMP_ADD_SUB\n";
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::ALU:
+                executeALUinstr();
+                this->regs[15] += 2;
+                std::cerr << "ALU\n";
+                break;
+
+            case InstrClass::HI_REG:
+                executeSpecialInstructions();
+                this->regs[15] += 2;
+                std::cerr << "HI_REG\n";
+                break;
+
+            case InstrClass::LDR_LITERAL:
+                std::cerr << "LDR_LITERAL\n";
+                executeLDRLiteral();
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::LOAD_STORE_REG:
+                executeLoadStoreReg();
+                std::cerr << "LOAD_STORE_REG\n";
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::LOAD_STORE_IMM:
+                executeLoadStoreImm();
+                this->regs[15] += 2;
+                std::cerr << "LOAD_STORE_IMM\n";
+                break;
+
+            case InstrClass::LOAD_STORE_HALF:
+                executeLoadStoreHalf();
+                this->regs[15] += 2;
+                std::cerr << "LOAD_STORE_HALF\n";
+                break;
+
+            case InstrClass::SP_REL:
+                executeSpRelative();
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::ADDR:
+                std::cerr << "ADDR\n";
+                executeAdr();
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::MISC:
+                std::cerr << "MISC\n";
+                executeMisc();
+                this->regs[15] += 2;
+                break;
+
+            case InstrClass::MULTIPLE:
+                executeMultiple();
+                this->regs[15] += 2;
+                std::cerr << "MULTIPLE\n";
+                break;
+
+            case InstrClass::COND_BRANCH:
+                executeCondBranch();
+                std::cerr << "COND_BRANCH\n";
+                break;
+
+            case InstrClass::UNCOND_BRANCH:
+                executeUncondBranch();
+                std::cerr << "UNCOND_BRANCH\n";
+                break;
+
+            case InstrClass::UNKNOWN:
+            default:
+                std::cerr << "UNKNOWN\n";
+                break;
+        }     
+    }
+}
+
+
 void Cpu::decode(void)
 {
-    uint32_t instruction = this->fetch();
-    uint8_t format_id = (instruction >> 11) & 0x1F;
     
-    std::cerr << "Instruction:" << std::hex << (uint16_t) instruction << std::endl;
+    
+    uint32_t instruction = this->fetched_instruction;
+
+    uint8_t format_id = (instruction >> 11) & 0x1F;
     
     if (is32bitInstruction(format_id))
     {
-         std::cerr << "Intrusction:" << std::bitset<32>(instruction) << std::endl;
+        this->instructionType = THUMB2;
+        std::cerr << "Instruction:" << std::bitset<32>(instruction) << std::endl;
         switch (format_id)
         {
             case 0b11101:
@@ -1790,6 +3084,7 @@ void Cpu::decode(void)
             // BL
             case 0b11110:
             {
+
                 // 1111 1000 0001 0000       1111 0000 0000 0000
 
                 uint8_t op1 = (instruction >> 20) & 0x7F;
@@ -1800,63 +3095,64 @@ void Cpu::decode(void)
                 // MSR
                 if ((op1 & 0b1111110) == 0b0111000 && ((op2 & 0b001) | (op2 & 0b100)) == 0b000)
                 {
-                    uint8_t d = second & 0x7;
-                    uint8_t sysm = first & 0xFF;
 
-                    switch ((sysm >> 3) & 0x1F)
-                    {
-                        case 0:
-                        {
-                            // APSR
-                            if ((sysm & 0b1) == 1)
-                            {
-                                regs[d] = this->xpsr & 0xFF;
-                            }
-                            else if ((sysm & (0b1 << 1)) == 1)
-                            {
-                                regs[d] &= ~(1 << 24);
-                            }
-                            else if ((sysm & (0b1 << 2)) == 0)
-                            {
-                                regs[d] = xpsr & 0xF8000000;
-                            }
-                            break;
-                        }
+                    // uint8_t d = second & 0x7;
+                    // uint8_t sysm = first & 0xFF;
 
-                        case 1:
-                        {
-                            if (this->currentModeIsPrivileged())
-                            {
-                                switch (sysm & 0x7)
-                                {
-                                    case 0:
-                                        regs[d] = msp;
-                                        break;
+                    // switch ((sysm >> 3) & 0x1F)
+                    // {
+                    //     case 0:
+                    //     {
+                    //         // APSR
+                    //         if ((sysm & 0b1) == 1)
+                    //         {
+                    //             regs[d] = this->xpsr.apsr & 0xFF;
+                    //         }
+                    //         else if ((sysm & (0b1 << 1)) == 1)
+                    //         {
+                    //             regs[d] &= ~(1 << 24);
+                    //         }
+                    //         else if ((sysm & (0b1 << 2)) == 0)
+                    //         {
+                    //             regs[d] = xpsr.apsr & 0xF8000000;
+                    //         }
+                    //         break;
+                    //     }
 
-                                    case 1:
-                                        regs[d] = psp;
-                                        break;
-                                }
-                            }
+                    //     case 1:
+                    //     {
+                    //         if (this->currentModeIsPrivileged())
+                    //         {
+                    //             switch (sysm & 0x7)
+                    //             {
+                    //                 case 0:
+                    //                     regs[d] = msp;
+                    //                     break;
 
-                            break;
-                        }
+                    //                 case 1:
+                    //                     regs[d] = psp;
+                    //                     break;
+                    //             }
+                    //         }
 
-                        case 2:
-                        {
-                            switch (sysm & 0x7)
-                            {
-                                case 0:
-                                    regs[d] &= ~(currentModeIsPrivileged() ? (primask & 0b1) : 0);
-                                    break;
+                    //         break;
+                    //     }
 
-                                case 4:
-                                    regs[d] &= ~(control & 0b11);
-                                    break;
-                            }
-                            break;
-                        }
-                    }
+                    //     case 2:
+                    //     {
+                    //         switch (sysm & 0x7)
+                    //         {
+                    //             case 0:
+                    //                 regs[d] &= ~(currentModeIsPrivileged() ? (primask & 0b1) : 0);
+                    //                 break;
+
+                    //             case 4:
+                    //                 regs[d] &= ~(control.nPRIV & 0b11);
+                    //                 break;
+                    //         }
+                    //         break;
+                    //     }
+                    // }
                 }
                 else if ((op1 & 0b1111111) == 0b0111011 && ((op2 & 0b001) | (op2 & 0b100)) == 0b000)
                 {
@@ -1874,34 +3170,10 @@ void Cpu::decode(void)
                 {
 
                     fprintf(stderr,"BRANCH AND LINK\n");
-                    // Branch and Link
-
-                    bool S  = (first >> 10) & 1;
-
-                    uint16_t imm10 = first & 0x03FF;
-
-                    bool J1 = (second >> 13) & 1;
-                    bool J2 = (second >> 11) & 1;
-
-                    uint16_t imm11 = second & 0x07FF;
-
-                    bool I1 = !(J1 ^ S);
-                    bool I2 = !(J2 ^ S);
-
-                    uint32_t imm25 =
-                        (S  << 24) |
-                        (I1 << 23) |
-                        (I2 << 22) |
-                        (imm10 << 12) |
-                        (imm11 << 1);
-
-                    int32_t  imm32 = sign_extend(imm25, 25);
-
-                    uint32_t next = regs[15] + 4;
-
-                    regs[14] = next | 1;
-
-                    regs[15] = next + imm32;
+                    // Branch and Link  
+                    this->decodedThumb2Instruction._BranchLinkInstruction = BranchLinkInstruction(instruction);
+                    this->thumb2Class = BRANCH_MISC;
+                    this->branch_misc_type = BL;
                 }
                 break;
 
@@ -1915,122 +3187,106 @@ void Cpu::decode(void)
     }
     else
     {
-        std::cerr << "Intrusction:" << std::bitset<16>((uint16_t)instruction) << std::endl;
-        std::cerr << "Intrusction:" << std::hex << ((uint16_t)instruction) << std::endl;
-    
+        this->instructionType = THUMB1;
         InstrClass instructionClass = classify(instruction);
-    
+        this->instructionClass = instructionClass;
+        std::cerr << "Instruction:" << std::bitset<16>((uint16_t)instruction) << std::endl;
+        std::cerr << "Instruction:" << std::hex << ((uint16_t)instruction) << std::endl;
         std::cerr << "Classified" << std::endl;
-
         std::cerr << static_cast<int>(instructionClass) << std::endl;
+
         switch (instructionClass)
         {
             case InstrClass::SHIFT_IMM:
                 handleShiftImmediate(instruction);
-                std::cerr << "SHIFT_IMM\n";
                 break;
 
             case InstrClass::ADD_SUB:
-                handleAddSub(instruction);
-                std::cerr << "ADD_SUB\n";
+                this->decodedInstruction._AddSubImmediateInstruction =
+                    AddSubImmediateInstruction(instruction);
                 break;
 
             case InstrClass::MOV_CMP_ADD_SUB:
-                handleMovCmpAddSub(instruction);
-                std::cerr << "MOV_CMP_ADD_SUB\n";
-                this->regs[15] += 2;
+                this->decodedInstruction.movCmpAddSubInstruction =
+                    MovCmpAddSubInstruction(instruction);
                 break;
 
             case InstrClass::ALU:
-                HandleALUinstr(instruction);
-                this->regs[15] += 2;
-                std::cerr << "ALU\n";
+                this->decodedInstruction._ALUInstruction =
+                    ALUInstruction(instruction);
                 break;
 
             case InstrClass::HI_REG:
-                handleSpecialInstructions(instruction);
-                this->regs[15] += 2;
-                std::cerr << "HI_REG\n";
+                this->decodedInstruction._SpecialInstruction =
+                    SpecialInstruction(instruction);
                 break;
 
             case InstrClass::LDR_LITERAL:
-                std::cerr << "LDR_LITERAL\n";
-                handleLDRLiteral(instruction);
-                this->regs[15] += 2;
+                this->decodedInstruction.lDRLiteralInstruction = 
+                    LDRLiteralInstruction(instruction);
                 break;
 
             case InstrClass::LOAD_STORE_REG:
-                handleLoadStoreReg(instruction);
-                std::cerr << "LOAD_STORE_REG\n";
-                this->regs[15] += 2;
+                this->decodedInstruction.loadStoreRegInstruction = 
+                    LoadStoreRegInstruction(instruction);
                 break;
 
             case InstrClass::LOAD_STORE_IMM:
-                handleLoadStoreImm(instruction);
-                this->regs[15] += 2;
-                std::cerr << "LOAD_STORE_IMM\n";
+                this->decodedInstruction.loadStoreImmInstruction = 
+                    LoadStoreImmInstruction(instruction);
                 break;
 
             case InstrClass::LOAD_STORE_HALF:
-                handleLoadStoreHalf(instruction);
-                this->regs[15] += 2;
-                std::cerr << "LOAD_STORE_HALF\n";
+              this->decodedInstruction.loadStoreHalfInstruction = 
+                    LoadStoreHalfInstruction(instruction);
                 break;
 
             case InstrClass::SP_REL:
-                handleSpRelative(instruction);
-                this->regs[15] += 2;
+                this->decodedInstruction.SpRelativeInstruction = 
+                    SpRelativeInstruction(instruction);
                 break;
 
             case InstrClass::ADDR:
-                std::cerr << "ADDR\n";
-                handleAddr(instruction);
-                this->regs[15] += 2;
+                this->decodedInstruction.adrInstruction = 
+                    AdrInstruction(instruction);
                 break;
 
             case InstrClass::MISC:
-                std::cerr << "MISC\n";
                 handleMisc(instruction);
-                this->regs[15] += 2;
                 break;
 
             case InstrClass::MULTIPLE:
-                handleMultiple(instruction);
-                this->regs[15] += 2;
-                std::cerr << "MULTIPLE\n";
+                this->decodedInstruction._LoadMultipleInstruction = 
+                    LoadMultipleInstruction(instruction);
                 break;
 
             case InstrClass::COND_BRANCH:
-                handleCondBranch(instruction);
-                std::cerr << "COND_BRANCH\n";
-                break;
 
-            case InstrClass::SVC:
-                std::cerr << "SVC\n";
+                this->decodedInstruction._BranchCondInstruction =
+                    BranchCondInstruction(instruction);
                 break;
 
             case InstrClass::UNCOND_BRANCH:
-                handleUncondBranch(instruction);
-                std::cerr << "UNCOND_BRANCH\n";
+                this->decodedInstruction._BranchUncondInstruction =
+                    BranchUncondInstruction(instruction);
                 break;
 
             case InstrClass::UNKNOWN:
             default:
                 std::cerr << "UNKNOWN\n";
                 break;
-        }
-        // this->print_state();        
+        }     
     }
 }
 
 
 void Cpu::print_state(void) const
 {
-    printf("\n--- CPU STATE ---\n");
+    fprintf(stderr, "\n--- CPU STATE ---\n");
 
     for(uint8_t i = 0; i < 16; i++)
     {
-        printf("r%-2d: 0x%08X    ", i, this->regs[i]);
+        fprintf(stderr, "r%-2d: 0x%08X    ", i, this->regs[i]);
         
         // Every 4 registers, print a newline to maintain the grid
         if ((i + 1) % 4 == 0) {
@@ -2038,8 +3294,9 @@ void Cpu::print_state(void) const
         }
     }
 
-    printf("-----------------\n");
-    printf("FLAGS: [ N:%d | Z:%d | C:%d | V:%d ]\n", 
+    fprintf(stderr, "-----------------\n");
+    fprintf(stderr, "FLAGS: [ N:%d | Z:%d | C:%d | V:%d ]\n", 
             this->aspr.N, this->aspr.Z, this->aspr.C, this->aspr.V);
-    printf("-----------------\n\n");
+    fprintf(stderr, "-----------------\n\n");
 }
+

@@ -1,14 +1,91 @@
 #include "emulator.hpp"
+enum CpuState
+{
+    CPU_RUNNING,
+    CPU_EXCEPTION_ENTRY,
+    CPU_EXCEPTION_HANDLER,
+    CPU_EXCEPTION_RETURN,
+    CPU_HALTED
+};
+
+enum ExceptionType
+{
+    EXC_NONE,
+    EXC_RESET,
+    EXC_UNDEFINED,
+    EXC_SVC,
+    EXC_HARDFAULT,
+    EXC_IRQ
+};
+
 
 void Emulator::startCpu(void)
 {
 
     std::cout << "RUNNING CODE OUTPUT:" << std::endl <<  std::endl;
 
-    // for (int i = 0 ; i < 50; i++)
-    for (;;)
+    for (int i = 0 ; i < 170; i++)
     {
-        cpu.decode();
+        // fprintf(stderr, "PC: %d\n", cpu.regs[15]);
+        cpu.fetch();
+        cpu.decode();    
+        cpu.execute();
+        // cpu.print_state();
+    }
+
+    // for (;;)
+    {
+
+
+    //     switch (this->cpu.state)
+    //     {
+    //         case CPU_RUNNING:
+    //         {
+    //             execute_instruction(cpu);
+
+    //             if (cpu.pending_exception != EXC_NONE)
+    //             {
+    //                 cpu.state = CPU_EXCEPTION_ENTRY;
+    //             }
+
+    //             break;
+    //         }
+
+    //         case CPU_EXCEPTION_ENTRY:
+    //         {
+    //             exception_entry(cpu);
+    //             cpu.state = CPU_EXCEPTION_HANDLER;
+    //             break;
+    //         }
+
+    //         case CPU_EXCEPTION_HANDLER:
+    //         {
+    //             execute_instruction(cpu);
+
+    //             if (exception_return_requested(cpu))
+    //             {
+    //                 cpu.state = CPU_EXCEPTION_RETURN;
+    //             }
+
+    //             break;
+    //         }
+
+    //         case CPU_EXCEPTION_RETURN:
+    //         {
+    //             exception_return(cpu);
+
+    //             cpu.pending_exception = EXC_NONE;
+    //             cpu.state = CPU_RUNNING;
+    //             break;
+    //         }
+
+    //         case CPU_HALTED:
+    //         {
+    //             break;
+    //         }
+    //     }
+
+    //     cpu.decode();
     }
 
     cpu.print_state();

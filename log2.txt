@@ -1,0 +1,745 @@
+Instruction:b580
+Intrusction:1011010110000000
+Intrusction:b580
+Classified
+b
+MISC
+PUSH
+handleMisc(): adddress: 20000ff8
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x00000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x00000000    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF8    r14: 0x00000000    r15: 0x00000012    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:b082
+Intrusction:1011000010000010
+Intrusction:b082
+Classified
+b
+MISC
+SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x00000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x00000000    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000014    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:af00
+Intrusction:1010111100000000
+Intrusction:af00
+Classified
+a
+ADDR
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x00000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000016    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:4b10
+Intrusction:0100101100010000
+Intrusction:4b10
+Classified
+5
+LDR_LITERAL
+LDR Literal
+imm: 64
+dest reg: 3
+Address 58
+Reading: Flash
+Reading: Flash Address: 88
+FLASH DATA: 108
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x00000108    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000018    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:607b
+Intrusction:0110000001111011
+Intrusction:607b
+Classified
+7
+STR (IMMEDIATE)
+Rn = r7 = 0x20000ff0
+Rt = r3 = 0x00000108
+Address = 0x20000ff4
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x00000108    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000001A    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:4b10
+Intrusction:0100101100010000
+Intrusction:4b10
+Classified
+5
+LDR_LITERAL
+LDR Literal
+imm: 64
+dest reg: 3
+Address 5c
+Reading: Flash
+Reading: Flash Address: 92
+FLASH DATA: 20000000
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000001C    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:603b
+Intrusction:0110000000111011
+Intrusction:603b
+Classified
+7
+STR (IMMEDIATE)
+Rn = r7 = 0x20000ff0
+Rt = r3 = 0x20000000
+Address = 0x20000ff0
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000001E    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:e007
+Intrusction:1110000000000111
+Intrusction:e007
+Classified
+f
+B (Branch)
+UNCOND_BRANCH
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000030    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:683a
+Intrusction:0110100000111010
+Intrusction:683a
+Classified
+7
+LDR (IMMEDIATE)
+Rn = r7 = 0x20000ff0
+Rt = r2 = 0x00000000
+Address = 0x20000ff0
+Reading: RAM
+address - RAM_BASE: ff0
+Loaded value = 0x20000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000032    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:4b0b
+Intrusction:0100101100001011
+Intrusction:4b0b
+Classified
+5
+LDR_LITERAL
+LDR Literal
+imm: 44
+dest reg: 3
+Address 60
+Reading: Flash
+Reading: Flash Address: 96
+FLASH DATA: 20000000
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000034    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:429a
+Intrusction:0100001010011010
+Intrusction:429a
+Classified
+3
+handle ALU
+CMP (Register)
+R2: 20000000
+R3: 20000000
+ALU
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000036    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:d3f3
+Intrusction:1101001111110011
+Intrusction:d3f3
+Classified
+d
+Handle cond
+COND_BRANCH
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000038    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:4b0a
+Intrusction:0100101100001010
+Intrusction:4b0a
+Classified
+5
+LDR_LITERAL
+LDR Literal
+imm: 40
+dest reg: 3
+Address 64
+Reading: Flash
+Reading: Flash Address: 100
+FLASH DATA: 20000000
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000003A    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:603b
+Intrusction:0110000000111011
+Intrusction:603b
+Classified
+7
+STR (IMMEDIATE)
+Rn = r7 = 0x20000ff0
+Rt = r3 = 0x20000000
+Address = 0x20000ff0
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000003C    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:e004
+Intrusction:1110000000000100
+Intrusction:e004
+Classified
+f
+B (Branch)
+UNCOND_BRANCH
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000048    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:683a
+Intrusction:0110100000111010
+Intrusction:683a
+Classified
+7
+LDR (IMMEDIATE)
+Rn = r7 = 0x20000ff0
+Rt = r2 = 0x20000000
+Address = 0x20000ff0
+Reading: RAM
+address - RAM_BASE: ff0
+Loaded value = 0x20000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000004A    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:4b07
+Intrusction:0100101100000111
+Intrusction:4b07
+Classified
+5
+LDR_LITERAL
+LDR Literal
+imm: 28
+dest reg: 3
+Address 68
+Reading: Flash
+Reading: Flash Address: 104
+FLASH DATA: 20000000
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000004C    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:429a
+Intrusction:0100001010011010
+Intrusction:429a
+Classified
+3
+handle ALU
+CMP (Register)
+R2: 20000000
+R3: 20000000
+ALU
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x0000004E    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:d3f6
+Intrusction:1101001111110110
+Intrusction:d3f6
+Classified
+d
+Handle cond
+COND_BRANCH
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000000    r15: 0x00000050    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:f000
+Intrusction:11111000000100001111000000000000
+BRANCH AND LINK
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FF0    r14: 0x00000055    r15: 0x00000074    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:b580
+Intrusction:1011010110000000
+Intrusction:b580
+Classified
+b
+MISC
+PUSH
+handleMisc(): adddress: 20000fe8
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FF0    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000076    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:af00
+Intrusction:1010111100000000
+Intrusction:af00
+Classified
+a
+ADDR
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x20000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000078    -----------------
+FLAGS: [ N:0 | Z:1 | C:1 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000007A    -----------------
+FLAGS: [ N:0 | Z:0 | C:1 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x20000000    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000007C    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2248
+Intrusction:0010001001001000
+Intrusction:2248
+Classified
+2
+MOV (imm)
+R2: 48
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000048    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000007E    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x00000048
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000048    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000080    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000048    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000082    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000048    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000084    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2249
+Intrusction:0010001001001001
+Intrusction:2249
+Classified
+2
+MOV (imm)
+R2: 49
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000049    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000086    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x00000049
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000049    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000088    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000049    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000008A    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000049    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000008C    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2220
+Intrusction:0010001000100000
+Intrusction:2220
+Classified
+2
+MOV (imm)
+R2: 20
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000020    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000008E    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x00000020
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000020    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000090    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000020    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000092    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000020    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000094    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2246
+Intrusction:0010001001000110
+Intrusction:2246
+Classified
+2
+MOV (imm)
+R2: 46
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000046    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000096    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x00000046
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000046    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x00000098    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000046    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000009A    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000046    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000009C    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2252
+Intrusction:0010001001010010
+Intrusction:2252
+Classified
+2
+MOV (imm)
+R2: 52
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000052    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x0000009E    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x00000052
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000052    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000A0    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000052    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000A2    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x00000052    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000A4    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:224f
+Intrusction:0010001001001111
+Intrusction:224f
+Classified
+2
+MOV (imm)
+R2: 4f
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004F    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000A6    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x0000004f
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004F    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000A8    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:2380
+Intrusction:0010001110000000
+Intrusction:2380
+Classified
+2
+MOV (imm)
+R3: 80
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004F    r3 : 0x00000080    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000AA    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:5db
+Intrusction:0000010111011011
+Intrusction:5db
+Classified
+0
+LSL (Immediate)
+imm5: 23
+SHIFT_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004F    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000AC    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:224d
+Intrusction:0010001001001101
+Intrusction:224d
+Classified
+2
+MOV (imm)
+R2: 4d
+MOV_CMP_ADD_SUB
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004D    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000AE    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
+Instruction:601a
+Intrusction:0110000000011010
+Intrusction:601a
+Classified
+7
+STR (IMMEDIATE)
+Rn = r3 = 0x40000000
+Rt = r2 = 0x0000004d
+Address = 0x40000000
+LOAD_STORE_IMM
+
+--- CPU STATE ---
+r0 : 0x00000000    r1 : 0x00000000    r2 : 0x0000004D    r3 : 0x40000000    r4 : 0x00000000    r5 : 0x00000000    r6 : 0x00000000    r7 : 0x20000FE8    r8 : 0x00000000    r9 : 0x00000000    r10: 0x00000000    r11: 0x00000000    r12: 0x00000000    r13: 0x20000FE8    r14: 0x00000055    r15: 0x000000B0    -----------------
+FLAGS: [ N:0 | Z:0 | C:0 | V:0 ]
+-----------------
+
