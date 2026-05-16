@@ -93,3 +93,9 @@ Redirect stdio output:
 # Note
 
 I haven't not yet fully implemented all the instructions, especially instructions involving special registers.
+
+3-stage pipeline timing
+branch refill penalties
+exact exception entry timing
+precise SysTick timing
+exact fetch/decode overlap

@@ -1,13 +1,26 @@
-Entry point: 0x11
-addr=00000000 filesz=108 memsz=108
-Loading segment 0 addr=0x0 filesz=264 memsz=264
+Entry point: 0x41
+addr=00000000 filesz=198 memsz=198
+Loading segment 0 addr=0x0 filesz=408 memsz=408
 RR
 flash
 Initial SP: 0x20001000
-Reset PC : 0x10
+Reset PC : 0x40
 RUNNING CODE OUTPUT:
 
-HI FROM FIRMWARE
+Handle MISC: 
+b580
+Handle MISC: 
+b082
+Handle MISC: 
+b580
+Handle MISC: 
+b580
+SYS
+Handle MISC: 
+b580
+SYS
+Handle MISC: 
+b580
 
 
 

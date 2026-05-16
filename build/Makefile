@@ -249,6 +249,30 @@ src/registers.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/emulator.dir/build.make CMakeFiles/emulator.dir/src/registers.cpp.s
 .PHONY : src/registers.cpp.s
 
+src/system.o: src/system.cpp.o
+.PHONY : src/system.o
+
+# target to build an object file
+src/system.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/emulator.dir/build.make CMakeFiles/emulator.dir/src/system.cpp.o
+.PHONY : src/system.cpp.o
+
+src/system.i: src/system.cpp.i
+.PHONY : src/system.i
+
+# target to preprocess a source file
+src/system.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/emulator.dir/build.make CMakeFiles/emulator.dir/src/system.cpp.i
+.PHONY : src/system.cpp.i
+
+src/system.s: src/system.cpp.s
+.PHONY : src/system.s
+
+# target to generate assembly for a file
+src/system.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/emulator.dir/build.make CMakeFiles/emulator.dir/src/system.cpp.s
+.PHONY : src/system.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -273,6 +297,9 @@ help:
 	@echo "... src/registers.o"
 	@echo "... src/registers.i"
 	@echo "... src/registers.s"
+	@echo "... src/system.o"
+	@echo "... src/system.i"
+	@echo "... src/system.s"
 .PHONY : help
 
 

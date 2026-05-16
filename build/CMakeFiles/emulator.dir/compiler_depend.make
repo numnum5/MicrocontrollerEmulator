@@ -372,6 +372,7 @@ CMakeFiles/emulator.dir/src/cpu.cpp.o: ../src/cpu.cpp \
   /usr/include/c++/11/limits \
   /usr/include/c++/11/bitset \
   /usr/include/c++/11/bit \
+  ../include/system.hpp \
   ../include/registers.hpp \
   /usr/include/c++/11/cassert \
   /usr/include/assert.h
@@ -575,6 +576,7 @@ CMakeFiles/emulator.dir/src/emulator.cpp.o: ../src/emulator.cpp \
   /usr/include/strings.h \
   /usr/include/elf.h \
   ../include/cpu.hpp \
+  ../include/system.hpp \
   ../include/registers.hpp \
   /usr/include/c++/11/cassert \
   /usr/include/assert.h
@@ -778,6 +780,7 @@ CMakeFiles/emulator.dir/src/main.cpp.o: ../src/main.cpp \
   /usr/include/strings.h \
   /usr/include/elf.h \
   ../include/cpu.hpp \
+  ../include/system.hpp \
   ../include/registers.hpp \
   /usr/include/c++/11/cassert \
   /usr/include/assert.h \
@@ -809,6 +812,27 @@ CMakeFiles/emulator.dir/src/registers.cpp.o: ../src/registers.cpp \
   /usr/include/x86_64-linux-gnu/c++/11/bits/cpu_defines.h \
   /usr/include/c++/11/pstl/pstl_config.h \
   /usr/include/assert.h
+
+CMakeFiles/emulator.dir/src/system.cpp.o: ../src/system.cpp \
+  /usr/include/stdc-predef.h \
+  ../include/system.hpp \
+  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h \
+  /usr/include/stdint.h \
+  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+  /usr/include/features.h \
+  /usr/include/features-time64.h \
+  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+  /usr/include/x86_64-linux-gnu/bits/timesize.h \
+  /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+  /usr/include/x86_64-linux-gnu/bits/long-double.h \
+  /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+  /usr/include/x86_64-linux-gnu/bits/types.h \
+  /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+  /usr/include/x86_64-linux-gnu/bits/time64.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
 
 
 ../src/registers.cpp:
@@ -870,6 +894,8 @@ CMakeFiles/emulator.dir/src/registers.cpp.o: ../src/registers.cpp \
 /usr/include/c++/11/stdexcept:
 
 /usr/include/x86_64-linux-gnu/c++/11/bits/error_constants.h:
+
+../include/system.hpp:
 
 /usr/include/c++/11/bits/stl_vector.h:
 
@@ -1006,6 +1032,8 @@ CMakeFiles/emulator.dir/src/registers.cpp.o: ../src/registers.cpp \
 /usr/include/x86_64-linux-gnu/sys/single_threaded.h:
 
 /usr/include/features.h:
+
+../src/system.cpp:
 
 /usr/include/c++/11/ext/numeric_traits.h:
 

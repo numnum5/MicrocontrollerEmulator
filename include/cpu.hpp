@@ -3,6 +3,7 @@
 #include <limits>
 #include <bitset>
 #include <bit>
+#include "system.hpp"
 #include "registers.hpp"
 
 using bit = bool;
@@ -70,10 +71,10 @@ typedef struct
 
 typedef struct
 {
-    bit N;
-    bit C;
-    bit Z;
-    bit V;
+    bit aspr_N;
+    bit apsr_C;
+    bit apsr_Z;
+    bit apsr_V;
     bit Q;
 } ASPR;
 
@@ -461,43 +462,93 @@ struct Control
     uint32_t reserved : 30;
 };
 
-union XPSR
+// struct XPSR
+// {
+//     // IPSR
+//     uint8_t ispr;
+//     // EPSR ICI/IT bits
+//     bool epsr_a;
+//     // Thumb state bit
+//     bool epsr_T;
+//     bool apsr_V;
+//     bool apsr_C;
+//     bool apsr_Z;
+//     bool aspr_N;
+// };
+
+struct XPSR
 {
     uint32_t value;
 
-    struct 
-    {
+    //----------------------------------
     // IPSR
-        uint32_t ispr : 5;
+    //----------------------------------
 
-        // EPSR reserved / ICI bits
-        uint32_t _reserved0 : 3;
+    uint32_t ipsr() const
+    {
+        return value & 0x3F;
+    }
 
-        // EPSR ICI/IT bits
-        uint32_t a : 1;
+    void setIPSR(uint32_t n)
+    {
+        value &= ~0x3Fu;
+        value |= (n & 0x3F);
+    }
 
-        uint32_t _reserved1 : 15;
-        // Thumb state bit
-        uint32_t T : 1;
+    void setAPSR(uint32_t apsr)
+    {
+        value &= ~(0xFu << 28);
 
-        uint32_t _reserved2 : 3;
+        value |= (apsr & 0xF) << 28;
+    }
 
-        // APSR flags
-        union
-        {
-            uint32_t apsr : 4;
+    //----------------------------------
+    // T bit
+    //----------------------------------
 
-            struct
-            {
-                uint32_t V : 1;
-                uint32_t C : 1;
-                uint32_t Z : 1;
-                uint32_t N : 1;
-            };
-        };
-    };
-    
+    bool T() const
+    {
+        return (value >> 24) & 1u;
+    }
 
+    void setT(bool b)
+    {
+        value &= ~(1u << 24);
+        value |= (uint32_t)b << 24;
+    }
+
+    //----------------------------------
+    // APSR flags
+    //----------------------------------
+
+    bool N() const { return (value >> 31) & 1u; }
+    bool Z() const { return (value >> 30) & 1u; }
+    bool C() const { return (value >> 29) & 1u; }
+    bool V() const { return (value >> 28) & 1u; }
+
+    void setN(bool b)
+    {
+        value &= ~(1u << 31);
+        value |= (uint32_t)b << 31;
+    }
+
+    void setZ(bool b)
+    {
+        value &= ~(1u << 30);
+        value |= (uint32_t)b << 30;
+    }
+
+    void setC(bool b)
+    {
+        value &= ~(1u << 29);
+        value |= (uint32_t)b << 29;
+    }
+
+    void setV(bool b)
+    {
+        value &= ~(1u << 28);
+        value |= (uint32_t)b << 28;
+    }
 };
 
 struct BranchLinkInstruction
@@ -543,23 +594,47 @@ enum InstructionType
     THUMB2
 };
 
+enum ExceptionType
+{
+    EXCEPTION_RESET     = 1,
+    EXCEPTION_NMI       = 2,
+    EXCEPTION_HARDFAULT = 3,
+    EXCEPTION_SVCALL    = 11,
+    EXCEPTION_PENDSV    = 14,
+    EXCEPTION_SYSTICK   = 15
+};
+
 class Cpu
 {
     public:
         static constexpr uint32_t FLASH_BASE = 0x00000000;
         static constexpr uint32_t FLASH_SIZE = 64 * 1024;
-
+                                    
         static constexpr uint32_t RAM_BASE   = 0x20000000;
         static constexpr uint32_t RAM_SIZE   = 16 * 1024;
         // uint8_t flash[0x1000];
 
+        uint32_t nextInstrAddr;
+        uint32_t currentInstrAddr;
+        
+        uint8_t exception_request;
+        uint8_t exception_number;
+
+        SCS scs;
+
+        void tick(void);
+
+        bool synchronous_fault;
+        bool exceptionActive[512];
+        bool exceptionPending[512];
         std::vector<uint8_t> flash;
         std::vector<uint8_t> ram;
         Registers registers;
         uint32_t regs[16];
         // uint8_t ram[0x1000];
-        ASPR aspr;
-        EPSR espr;
+        XPSR xpsr;
+        // ASPR aspr;
+        // EPSR espr;
         // uint32_t xpsr;
         uint32_t msp;
         uint32_t psp;
@@ -583,7 +658,7 @@ class Cpu
 
         Branch_misc_type branch_misc_type;
         
-        XPSR xpsr;
+
 
         InstructionType instructionType;
 
@@ -605,6 +680,9 @@ class Cpu
         InstrClass classify(uint16_t instr);
         bool currentModeIsPrivileged(void);
         
+
+        void setAPSRValues(bool c, bool n, bool v, bool z);
+        
         void handleSpecialInstructions(uint16_t instruction);
 
         uint8_t currentCond(uint32_t instruction);
@@ -616,20 +694,9 @@ class Cpu
 
         bool inITBlock(void);
         bool is32bitInstruction(uint8_t thumb_mode);
-        void HandleALUinstr(uint16_t instruction);
-        void handleLoadStoreHalf(uint16_t instr);
-        void handleLoadStoreImm(uint16_t instr);
-        void handleLDRLiteral(uint16_t instruction);
-        void handleMultiple(uint16_t instr);
-        void handleMovCmpAddSub(uint16_t instr);
-        void handleUncondBranch(uint16_t instr);
-        void handleCondBranch(uint16_t instr);
-        void handleAddSub(uint16_t instr);
+
         void handleShiftImmediate(uint16_t instr);
         void handleMisc(uint16_t instr);
-        void handleAdr(uint16_t instr);
-        void handleLoadStoreReg(uint16_t instr);
-        void handleSpRelative(uint16_t instr);
 
         void executeMisc(void);
         void executeAdr(void);
@@ -658,204 +725,32 @@ class Cpu
         uint32_t LSR(uint32_t x, int shift);
         uint32_t ROR(uint32_t x, int shift);
         uint32_t LSL(uint32_t x, int shift);
+        uint32_t returnAddress(int exceptionType);
 
-enum ExceptionType
-{
-    EXCEPTION_RESET     = 1,
-    EXCEPTION_NMI       = 2,
-    EXCEPTION_HARDFAULT = 3,
-    EXCEPTION_SVCALL    = 11,
-    EXCEPTION_PENDSV    = 14,
-    EXCEPTION_SYSTICK   = 15
-};
-
-uint32_t nextInstrAddr;
-uint32_t currentInstrAddr;
-bool synchronous_fault;
-
-uint32_t returnAddress(int exceptionType)
-{
-    uint32_t result = 0;
-
-    switch (exceptionType)
-    {
-        case EXCEPTION_NMI:
-        {
-            result = nextInstrAddr;
-            break;
-        }
-
-        case EXCEPTION_HARDFAULT:
-        {
-            if (synchronous_fault)
-                result = currentInstrAddr;
-            else
-                result = nextInstrAddr;
-
-            break;
-        }
-
-        case EXCEPTION_SVCALL:
-        case EXCEPTION_PENDSV:
-        case EXCEPTION_SYSTICK:
-        {
-            result = nextInstrAddr;
-            break;
-        }
-
-        default:
-        {
-            // External interrupts
-            if (exceptionType >= 16)
-            {
-                result = nextInstrAddr;
-            }
-            else
-            {
-                assert(false && "Unknown exception number");
-            }
-            break;
-        }
-    }
-
-    // Return address must always be halfword aligned
-    result &= ~1u;
-
-    return result;
-}
-
-    void pushStack(int ExceptionType)
-    {
-        uint32_t frameptr;
-        uint32_t frameptralign;
-
-        // Select active stack pointer
-        if (this->control.SPSEL && this->currentMode == Mode::MODE_HANDLER)
-        {
-            // Save original alignment bit
-            frameptralign = (this->psp >> 2) & 1;
-            // Allocate 0x20 bytes and align to 8-byte boundary
-            this->psp = (this->psp - 0x20) & ~0x7u;
-
-            frameptr = this->psp;
-        }
-        else
-        {
-            frameptralign = (this->msp >> 2) & 1;
-
-            this->msp = (this->msp - 0x20) & ~0x7u;
-
-            frameptr = this->msp;
-        }
-
-        // Hardware-defined stack frame layout
-        write32(frameptr + 0x00, regs[0]);
-        write32(frameptr + 0x04, regs[1]);
-        write32(frameptr + 0x08, regs[2]);
-        write32(frameptr + 0x0C, regs[3]);
-        write32(frameptr + 0x10, regs[12]);
-        write32(frameptr + 0x14, regs[14]); // LR
-        write32(frameptr + 0x18, returnAddress(ExceptionType));
-
-        // Insert alignment bit into stacked xPSR bit 9
-        uint32_t stacked_xpsr = (this->xpsr.value & ~(1 << 9)) |(frameptralign << 9);
-
-        write32(frameptr + 0x1C, stacked_xpsr);
-
-        if (this->currentMode == Mode::MODE_HANDLER)
-        {
-            regs[14] = 0xFFFFFFF1;
-        }
-        else
-        {
-            if (this->control.SPSEL == 0)
-            {
-                regs[14] = 0xFFFFFFF9;
-            }
-            else
-            {
-                regs[14] = 0xFFFFFFFD;
-            }
-        }
-    }
-
-        bool exceptionActive[48];
-
-    void exceptionTaken(int32_t exceptionNumber)
-    {
-
-        for (int i = 0; i <= 3; i++)
-        {
-            regs[i] = 0;
-        }
-
-        regs[12] = 0;
-
-        this->xpsr.apsr = 0;
-
-        // Enter Handler mode
-        currentMode = Mode::MODE_HANDLER;
-
-        // IPSR<5:0> = ExceptionNumber<5:0>
-        this->xpsr.ispr = exceptionNumber & 0x3F;
-
-        // Use Main Stack Pointer
-        control.SPSEL = 0;
-
-        // CONTROL.nPRIV unchanged
-
-        // Mark exception active
-        exceptionActive[exceptionNumber] = true;
-
-        // Update system control state
-        // SCS_UpdateStatusRegs();
-
-        // Wake Event Register
-        // SetEventRegister();
-
-        // Instruction Synchronization Barrier
-        // InstructionSynchronizationBarrier(0xF);
-
-        // Load vector table base
-        uint32_t vectorTable = 0x0;
-
-        // Read handler address from vector table
-        uint32_t handler = read32v2(vectorTable + (4 * exceptionNumber));
-
-        // Branch to handler
-        BLXWritePC(handler);
-    
-    }
-
-    void BLXWritePC(uint32_t address)
-    {   
-        this->xpsr.T == address & 0b1;
-        this->regs[15] = address;
-    }
-
-
-    void exceptionEntry(int32_t ExceptionType)
-    {
-        uint16_t frameptraling = 0;
-        if (this->control.SPSEL == 1 && this->currentMode == Mode::MODE_THREAD)
-        {
-            frameptraling = this->psp;
-        }
-        // NOTE: PushStack() can abandon memory accesses if a fault occurs during the stacking
-        // sequence.
-        // Exception entry is modified according to the behavior of a derived exception.
-        pushStack(ExceptionType);
-        exceptionTaken(ExceptionType); // ExceptionType is encoded as its exception number
-    }
-
-        uint8_t exception_request;
-        uint8_t exception_number;
+        void pushStack(int ExceptionType);
+        void exceptionTaken(int32_t exceptionNumber);
+        void BLXWritePC(uint32_t address);
+        void exceptionEntry(int32_t ExceptionType);
         void BXWritePC(uint32_t address);
+        bool handleSyncrnousExceptions(void);
+        void handleAsyncrnousExceptions(void);
+
         // The 3 stages of the CPU processing
         void fetch(void);
         void decode(void);
         void execute(void);
         void print_state(void) const;
+
+        uint32_t VTOR;
+        uint8_t decodedInstructionSize;
+
+        void deActivate(uint32_t exceptionNumber);
+
+        void reset();
+        uint32_t exceptionActiveBitCount() const;
+        void exceptionReturn(uint32_t EXC_RETURN);
+
+        void PopStack(uint32_t frameptr, uint32_t EXC_RETURN);
 
     private:
 

@@ -4,7 +4,7 @@
 extern uint32_t _sdata, _edata, _sidata;
 extern uint32_t _sbss, _ebss;
 extern uint32_t _estack;
-
+#define UART_DR (*(volatile unsigned int*)0x40000000)
 /* Function prototype */
 int main(void);
 
@@ -35,6 +35,29 @@ void Default_Handler(void)
     while (1);
 }
 
+
+void SVC_Handler(void)
+{
+    UART_DR = '@';
+    UART_DR = '@';
+    while (1);
+}
+
+void PendSV_Handler(void)
+{
+    while (1);
+}
+
+void SysTick_Handler(void)
+{
+    UART_DR = 'S';
+    UART_DR = 'Y';
+    UART_DR = 'S';
+    UART_DR = '\n';
+    while (1);
+}
+
+/* Vector table */
 /* Vector table */
 __attribute__((section(".isr_vector")))
 void (* const vector_table[])(void) = {
@@ -42,4 +65,18 @@ void (* const vector_table[])(void) = {
     Reset_Handler,              /* Reset */
     Default_Handler,            /* NMI */
     Default_Handler,            /* HardFault */
+
+    0,                          /* MemManage (not used on M0) */
+    0,                          /* BusFault  (not used on M0) */
+    0,                          /* UsageFault (not used on M0) */
+    0,
+    0,
+    0,
+    0,
+
+    SVC_Handler,                /* SVCall */
+    0,                          /* DebugMonitor */
+    0,                          /* Reserved */
+    PendSV_Handler,             /* PendSV */
+    SysTick_Handler             /* SysTick */
 };

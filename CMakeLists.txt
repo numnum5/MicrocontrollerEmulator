@@ -8,6 +8,7 @@ add_executable(emulator
     src/emulator.cpp
     src/compiler.cpp
     src/registers.cpp
+    src/system.cpp
 )
 
 target_include_directories(emulator

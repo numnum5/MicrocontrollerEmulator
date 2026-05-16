@@ -1,21 +1,14 @@
 #include "emulator.hpp"
 enum CpuState
 {
-    CPU_RUNNING,
+    FETCH,
+    DECODE,
+    EXECUTE,
+    CPU_EXCEPTION_CHECK,
     CPU_EXCEPTION_ENTRY,
     CPU_EXCEPTION_HANDLER,
     CPU_EXCEPTION_RETURN,
     CPU_HALTED
-};
-
-enum ExceptionType
-{
-    EXC_NONE,
-    EXC_RESET,
-    EXC_UNDEFINED,
-    EXC_SVC,
-    EXC_HARDFAULT,
-    EXC_IRQ
 };
 
 
@@ -24,70 +17,39 @@ void Emulator::startCpu(void)
 
     std::cout << "RUNNING CODE OUTPUT:" << std::endl <<  std::endl;
 
-    for (int i = 0 ; i < 170; i++)
+
+// for (int i = 0; i < 400; i += 2)
+// {
+//     printf("PC: %d\n", i);
+
+//     uint16_t instruction =
+//         static_cast<uint16_t>(cpu.flash[i]) |
+//         (static_cast<uint16_t>(cpu.flash[i + 1]) << 8);
+
+//     std::cout << std::hex << instruction << std::endl;
+// }
+
+    // for(;;)
+    for (int i = 0 ; i < 104; i++)
     {
-        // fprintf(stderr, "PC: %d\n", cpu.regs[15]);
+        cpu.currentInstrAddr = cpu.regs[15];
+        fprintf(stderr, "PC: %d\n", cpu.regs[15]);
+
         cpu.fetch();
+        cpu.tick();
+        cpu.handleAsyncrnousExceptions();
         cpu.decode();    
+        cpu.tick();
+        cpu.nextInstrAddr = cpu.currentInstrAddr + cpu.decodedInstructionSize;
+        cpu.handleAsyncrnousExceptions();
         cpu.execute();
+        cpu.tick();
+        // Leave current isnt addr as it is the same 
+        // cpu.nextInstrAddr = cpu.regs[15];
+        cpu.handleSyncrnousExceptions();
+        cpu.handleAsyncrnousExceptions();
         // cpu.print_state();
     }
-
-    // for (;;)
-    {
-
-
-    //     switch (this->cpu.state)
-    //     {
-    //         case CPU_RUNNING:
-    //         {
-    //             execute_instruction(cpu);
-
-    //             if (cpu.pending_exception != EXC_NONE)
-    //             {
-    //                 cpu.state = CPU_EXCEPTION_ENTRY;
-    //             }
-
-    //             break;
-    //         }
-
-    //         case CPU_EXCEPTION_ENTRY:
-    //         {
-    //             exception_entry(cpu);
-    //             cpu.state = CPU_EXCEPTION_HANDLER;
-    //             break;
-    //         }
-
-    //         case CPU_EXCEPTION_HANDLER:
-    //         {
-    //             execute_instruction(cpu);
-
-    //             if (exception_return_requested(cpu))
-    //             {
-    //                 cpu.state = CPU_EXCEPTION_RETURN;
-    //             }
-
-    //             break;
-    //         }
-
-    //         case CPU_EXCEPTION_RETURN:
-    //         {
-    //             exception_return(cpu);
-
-    //             cpu.pending_exception = EXC_NONE;
-    //             cpu.state = CPU_RUNNING;
-    //             break;
-    //         }
-
-    //         case CPU_HALTED:
-    //         {
-    //             break;
-    //         }
-    //     }
-
-    //     cpu.decode();
-    }
-
     cpu.print_state();
 }
 
@@ -210,6 +172,9 @@ void Emulator::load_elf(const std::string& path)
     }
 
     cpu.regs[13] = cpu.read32Flash(0x0);
+
+    // Part of the reset behaviour but it is elf loading section (FIX ME)
+    cpu.msp = cpu.read32Flash(0x0);
     cpu.regs[15] = cpu.read32Flash(0x4) & ~1;
 
     std::cout << "Initial SP: 0x" << std::hex << cpu.regs[13] << "\n";

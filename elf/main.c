@@ -1,9 +1,17 @@
 #include <stdint.h>
 
-#define UART_DR (*(volatile unsigned int*)0x40000000)
+#define UART_DR  (*(volatile uint32_t*)0x40000000)
+#define SYST_CSR (*(volatile uint32_t*)0xE000E010)
+#define SYST_RVR (*(volatile uint32_t*)0xE000E014)
+#define SYST_CVR (*(volatile uint32_t*)0xE000E018)
 
 int main(void)
 {
+        // Enable Systick;
+    SYST_RVR = 100;
+    SYST_CVR = 0;
+    SYST_CSR = 7;
+
     UART_DR = 'H';
     UART_DR = 'I';
     UART_DR = ' ';
@@ -25,6 +33,10 @@ int main(void)
     asm volatile(
         "ldr r0, =0xDEADBEEF\n"
     );
+
+    // asm volatile(
+    //     "svc #0\n"
+    // );
 
     while(1);
 }
